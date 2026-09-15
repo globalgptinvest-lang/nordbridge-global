@@ -1,0 +1,366 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NordBridge — Business Introducer, Transaction Facilitator and International Business Development.">
+  <title>NordBridge | Global Business Connections</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #07111f;
+      color: #ffffff;
+      line-height: 1.6;
+    }
+
+    header {
+      min-height: 100vh;
+      background:
+        linear-gradient(rgba(5,15,30,.88), rgba(5,15,30,.94)),
+        linear-gradient(135deg,#0b1f38,#07111f);
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 8%;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .logo span {
+      color: #4fa3ff;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 24px;
+      font-size: 14px;
+    }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 70px 8%;
+    }
+
+    .hero-content {
+      max-width: 850px;
+    }
+
+    .tag {
+      color: #4fa3ff;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(44px,8vw,82px);
+      line-height: 1.05;
+      margin-bottom: 25px;
+    }
+
+    .hero p {
+      max-width: 720px;
+      font-size: 20px;
+      color: #cbd5e1;
+      margin-bottom: 35px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 15px 25px;
+      background: #1677ff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 7px;
+      font-weight: bold;
+      margin: 6px 8px 6px 0;
+    }
+
+    .button.secondary {
+      background: transparent;
+      border: 1px solid #52647a;
+    }
+
+    section {
+      padding: 85px 8%;
+    }
+
+    .light {
+      background: #ffffff;
+      color: #0c1726;
+    }
+
+    .section-title {
+      font-size: 36px;
+      margin-bottom: 15px;
+    }
+
+    .intro {
+      max-width: 800px;
+      color: #64748b;
+      margin-bottom: 45px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+      gap: 22px;
+    }
+
+    .card {
+      padding: 28px;
+      border-radius: 12px;
+      background: #f3f6fa;
+      border: 1px solid #e3e9f0;
+    }
+
+    .card h3 {
+      margin-bottom: 12px;
+      font-size: 20px;
+    }
+
+    .card p {
+      color: #64748b;
+    }
+
+    .dark-section {
+      background: #0b1728;
+    }
+
+    .dark-card {
+      padding: 28px;
+      border: 1px solid #26364c;
+      border-radius: 12px;
+      background: #101f33;
+    }
+
+    .dark-card h3 {
+      margin-bottom: 10px;
+      color: #69b2ff;
+    }
+
+    .dark-card p {
+      color: #b8c5d6;
+    }
+
+    .contact {
+      text-align: center;
+    }
+
+    .contact p {
+      color: #c4d0df;
+      margin: 10px 0;
+    }
+
+    footer {
+      padding: 30px 8%;
+      text-align: center;
+      color: #8090a4;
+      border-top: 1px solid #1c2b3e;
+      font-size: 14px;
+    }
+
+    @media(max-width:700px) {
+      nav {
+        padding: 20px 5%;
+      }
+
+      nav .links {
+        display: none;
+      }
+
+      .hero, section {
+        padding-left: 6%;
+        padding-right: 6%;
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <nav>
+    <div class="logo">NORD<span>BRIDGE</span></div>
+
+    <div class="links">
+      <a href="#about">About</a>
+      <a href="#services">Services</a>
+      <a href="#sectors">Sectors</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-content">
+      <div class="tag">GLOBAL BUSINESS CONNECTIONS</div>
+
+      <h1>Connecting Opportunities.<br>Building Business.</h1>
+
+      <p>
+        NordBridge connects companies, suppliers, contractors and business
+        opportunities across international markets. We support introductions,
+        transaction coordination and business development from first contact
+        through the pre-contract stage.
+      </p>
+
+      <a class="button" href="#contact">Contact NordBridge</a>
+      <a class="button secondary" href="#services">Our Services</a>
+    </div>
+  </div>
+</header>
+
+<section class="light" id="about">
+  <h2 class="section-title">About NordBridge</h2>
+
+  <p class="intro">
+    NordBridge is an independent business introduction and transaction
+    facilitation company based in Denmark. We identify commercial
+    opportunities, connect relevant parties and coordinate communication
+    between customers, suppliers and contractors.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Business Introductions</h3>
+      <p>
+        Connecting qualified businesses with potential customers,
+        suppliers, contractors and commercial partners.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Transaction Facilitation</h3>
+      <p>
+        Supporting communication and coordination between parties
+        during commercial discussions and pre-contract processes.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Business Development</h3>
+      <p>
+        Identifying opportunities in international markets and
+        developing new B2B relationships.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="dark-section" id="services">
+  <h2 class="section-title">What We Do</h2>
+
+  <p class="intro">
+    NordBridge operates as an independent Business Introducer,
+    Transaction Facilitator and Business Development Partner.
+  </p>
+
+  <div class="grid">
+    <div class="dark-card">
+      <h3>Opportunity Sourcing</h3>
+      <p>
+        Identification of relevant commercial opportunities,
+        procurement requirements and potential business partners.
+      </p>
+    </div>
+
+    <div class="dark-card">
+      <h3>Supplier & Contractor Matching</h3>
+      <p>
+        Matching opportunities with companies capable of providing
+        the required products, services or project execution.
+      </p>
+    </div>
+
+    <div class="dark-card">
+      <h3>Tender Coordination</h3>
+      <p>
+        Coordination and support relating to tender opportunities,
+        documentation and communication where agreed and permitted.
+      </p>
+    </div>
+
+    <div class="dark-card">
+      <h3>International B2B</h3>
+      <p>
+        Cross-border introductions and commercial coordination
+        across Europe and international markets.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="light" id="sectors">
+  <h2 class="section-title">Sectors</h2>
+
+  <p class="intro">
+    NordBridge evaluates opportunities across multiple industries
+    rather than operating as a product manufacturer or reseller.
+  </p>
+
+  <div class="grid">
+    <div class="card"><h3>Energy & BESS</h3><p>Energy infrastructure and battery energy storage opportunities.</p></div>
+    <div class="card"><h3>Industrial Equipment</h3><p>Machinery, automation and industrial supply opportunities.</p></div>
+    <div class="card"><h3>Infrastructure</h3><p>Construction, engineering and infrastructure projects.</p></div>
+    <div class="card"><h3>Technology</h3><p>IT infrastructure, servers, storage and technology procurement.</p></div>
+    <div class="card"><h3>Logistics</h3><p>International logistics, supply and commercial coordination.</p></div>
+    <div class="card"><h3>Other B2B Opportunities</h3><p>Selected international commercial and procurement opportunities.</p></div>
+  </div>
+</section>
+
+<section class="dark-section contact" id="contact">
+  <h2 class="section-title">Work With NordBridge</h2>
+
+  <p>
+    Companies seeking new business opportunities, contractors,
+    suppliers or international commercial connections are welcome
+    to contact NordBridge.
+  </p>
+
+  <p><strong>NordBridge</strong></p>
+  <p>Oleksandr Hutyria</p>
+  <p>CVR: 46768736</p>
+  <p>Denmark</p>
+
+  <br>
+
+  <a class="button" href="mailto:global.gpt.invest@gmail.com">
+    Email NordBridge
+  </a>
+
+  <a class="button secondary"
+     href="https://wa.me/4571887925">
+    WhatsApp
+  </a>
+</section>
+
+<footer>
+  © 2026 NordBridge · Denmark · CVR 46768736
+</footer>
+
+</body>
+</html>
