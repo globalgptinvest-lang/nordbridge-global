@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://nordbridge-global.com/sitemap.xml
