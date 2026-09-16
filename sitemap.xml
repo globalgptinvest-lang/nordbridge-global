@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://nordbridge-global.com/</loc></url>
-<url><loc>https://nordbridge-global.com/about.html</loc></url>
-<url><loc>https://nordbridge-global.com/services.html</loc></url>
-<url><loc>https://nordbridge-global.com/industries.html</loc></url>
-<url><loc>https://nordbridge-global.com/opportunities.html</loc></url>
-<url><loc>https://nordbridge-global.com/approach.html</loc></url>
-<url><loc>https://nordbridge-global.com/contact.html</loc></url>
-<url><loc>https://nordbridge-global.com/privacy.html</loc></url>
-<url><loc>https://nordbridge-global.com/terms.html</loc></url>
+  <url><loc>https://nordbridge-global.com/</loc><lastmod>2026-09-16</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://nordbridge-global.com/about.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nordbridge-global.com/services.html</loc><lastmod>2026-09-16</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nordbridge-global.com/business-introduction.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nordbridge-global.com/tender-opportunity-sourcing.html</loc><lastmod>2026-09-16</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nordbridge-global.com/contractor-supplier-matching.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nordbridge-global.com/tender-document-support.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nordbridge-global.com/pre-contract-coordination.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nordbridge-global.com/international-business-development.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nordbridge-global.com/industries.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nordbridge-global.com/opportunities.html</loc><lastmod>2026-09-16</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nordbridge-global.com/approach.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://nordbridge-global.com/contact.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://nordbridge-global.com/privacy.html</loc><lastmod>2026-09-16</lastmod><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://nordbridge-global.com/terms.html</loc><lastmod>2026-09-16</lastmod><changefreq>yearly</changefreq><priority>0.2</priority></url>
 </urlset>
