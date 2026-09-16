@@ -1,366 +1,53 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="NordBridge — Business Introducer, Transaction Facilitator and International Business Development.">
-  <title>NordBridge | Global Business Connections</title>
-
+  <meta name="description" content="NordBridge is an independent Business Introducer and Transaction Facilitator in Denmark, connecting contractors, suppliers, buyers and international procurement opportunities.">
+  <meta name="theme-color" content="#061528">
+  <meta property="og:title" content="NordBridge | Connecting Business. Creating Opportunities.">
+  <meta property="og:description" content="International B2B introductions, tender opportunity sourcing, contractor matching and pre-contract coordination.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nordbridge-global.com/">
+  <link rel="canonical" href="https://nordbridge-global.com/">
+  <title>NordBridge | Global Business Introducer & Transaction Facilitator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23062c55'/%3E%3Cpath d='M14 13v37l10-4V25l16 12V17l10-6v39l-10-4V38L24 26v20l-10 4z' fill='%23fff'/%3E%3Cpath d='M8 42c15-10 34-10 48 0-14-6-33-6-48 0z' fill='%235aa0cf'/%3E%3C/svg%3E">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"ProfessionalService","name":"NordBridge","url":"https://nordbridge-global.com/","email":"global.gpt.invest@gmail.com","telephone":"+45 71 88 79 25","areaServed":"Worldwide","address":{"@type":"PostalAddress","addressCountry":"DK"},"identifier":"CVR 46768736","description":"Independent Business Introducer and Transaction Facilitator for international B2B and procurement opportunities."}
+  </script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #07111f;
-      color: #ffffff;
-      line-height: 1.6;
-    }
-
-    header {
-      min-height: 100vh;
-      background:
-        linear-gradient(rgba(5,15,30,.88), rgba(5,15,30,.94)),
-        linear-gradient(135deg,#0b1f38,#07111f);
-      display: flex;
-      flex-direction: column;
-    }
-
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 24px 8%;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-    }
-
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 1px;
-    }
-
-    .logo span {
-      color: #4fa3ff;
-    }
-
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      margin-left: 24px;
-      font-size: 14px;
-    }
-
-    .hero {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      padding: 70px 8%;
-    }
-
-    .hero-content {
-      max-width: 850px;
-    }
-
-    .tag {
-      color: #4fa3ff;
-      font-weight: bold;
-      letter-spacing: 2px;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: clamp(44px,8vw,82px);
-      line-height: 1.05;
-      margin-bottom: 25px;
-    }
-
-    .hero p {
-      max-width: 720px;
-      font-size: 20px;
-      color: #cbd5e1;
-      margin-bottom: 35px;
-    }
-
-    .button {
-      display: inline-block;
-      padding: 15px 25px;
-      background: #1677ff;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 7px;
-      font-weight: bold;
-      margin: 6px 8px 6px 0;
-    }
-
-    .button.secondary {
-      background: transparent;
-      border: 1px solid #52647a;
-    }
-
-    section {
-      padding: 85px 8%;
-    }
-
-    .light {
-      background: #ffffff;
-      color: #0c1726;
-    }
-
-    .section-title {
-      font-size: 36px;
-      margin-bottom: 15px;
-    }
-
-    .intro {
-      max-width: 800px;
-      color: #64748b;
-      margin-bottom: 45px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
-      gap: 22px;
-    }
-
-    .card {
-      padding: 28px;
-      border-radius: 12px;
-      background: #f3f6fa;
-      border: 1px solid #e3e9f0;
-    }
-
-    .card h3 {
-      margin-bottom: 12px;
-      font-size: 20px;
-    }
-
-    .card p {
-      color: #64748b;
-    }
-
-    .dark-section {
-      background: #0b1728;
-    }
-
-    .dark-card {
-      padding: 28px;
-      border: 1px solid #26364c;
-      border-radius: 12px;
-      background: #101f33;
-    }
-
-    .dark-card h3 {
-      margin-bottom: 10px;
-      color: #69b2ff;
-    }
-
-    .dark-card p {
-      color: #b8c5d6;
-    }
-
-    .contact {
-      text-align: center;
-    }
-
-    .contact p {
-      color: #c4d0df;
-      margin: 10px 0;
-    }
-
-    footer {
-      padding: 30px 8%;
-      text-align: center;
-      color: #8090a4;
-      border-top: 1px solid #1c2b3e;
-      font-size: 14px;
-    }
-
-    @media(max-width:700px) {
-      nav {
-        padding: 20px 5%;
-      }
-
-      nav .links {
-        display: none;
-      }
-
-      .hero, section {
-        padding-left: 6%;
-        padding-right: 6%;
-      }
-
-      .hero p {
-        font-size: 17px;
-      }
-    }
+    :root{--navy:#061528;--navy2:#0a223b;--blue:#1677ff;--sky:#61b4ef;--ink:#0a1930;--muted:#66768a;--line:#dbe4ed;--soft:#f3f7fb;--white:#fff;--max:1180px}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.65}a{color:inherit}.wrap{width:min(var(--max),88vw);margin:auto}
+    .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#4599d7}.eyebrow:before{content:"";width:24px;height:2px;background:currentColor;border-radius:2px}.section-head{max-width:780px;margin-bottom:42px}.section-head h2{font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.04em;margin:12px 0 16px}.section-head p{font-size:18px;color:var(--muted)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;border:1px solid transparent;transition:.2s}.btn:hover{transform:translateY(-2px)}.btn.primary{background:linear-gradient(135deg,#1477ff,#2f99df);color:#fff;box-shadow:0 14px 34px rgba(22,119,255,.25)}.btn.ghost{border-color:rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.05)}
+    .top{position:relative;overflow:hidden;background:radial-gradient(circle at 78% 18%,rgba(54,143,210,.24),transparent 30%),linear-gradient(145deg,#04101f,#071b31 60%,#092846);color:#fff;min-height:100vh}.top:after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px}
+    nav{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;height:84px;border-bottom:1px solid rgba(255,255,255,.11)}.brand{display:flex;align-items:center;gap:12px;text-decoration:none}.brand-mark{width:52px;height:40px}.brand-name{font-size:22px;font-weight:800;letter-spacing:-.035em}.brand-name b{font-weight:400}.navlinks{display:flex;align-items:center;gap:24px}.navlinks a{text-decoration:none;color:#cdd8e6;font-size:13px;font-weight:700}.navlinks a:hover{color:#fff}.nav-cta{padding:10px 14px!important;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff!important}.menu{display:none;background:none;border:0;color:#fff;font-size:26px}
+    .hero{position:relative;z-index:2;display:grid;grid-template-columns:1.08fr .92fr;gap:65px;align-items:center;min-height:calc(100vh - 84px);padding:72px 0 90px}.hero h1{font-size:clamp(54px,7vw,88px);line-height:.98;letter-spacing:-.055em;max-width:760px;margin:16px 0 26px}.hero h1 span{color:#61b4ef}.hero-copy{font-size:19px;color:#b9c8d9;max-width:720px}.hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:32px}.hero-meta{display:flex;flex-wrap:wrap;gap:18px;margin-top:34px;padding-top:25px;border-top:1px solid rgba(255,255,255,.12);color:#9eb0c4;font-size:13px}.hero-meta strong{color:#fff}
+    .logo-panel{background:linear-gradient(180deg,#fff,#f3f8fc);border-radius:28px;padding:38px 30px;box-shadow:0 32px 80px rgba(0,0,0,.32);color:#07345f}.hero-logo{text-align:center}.hero-symbol{width:min(250px,62%)}.hero-logo-name{font-size:clamp(44px,5vw,66px);font-weight:800;letter-spacing:-.06em;line-height:1}.hero-logo-name span{font-weight:400}.hero-tagline{margin-top:16px;font-size:15px;letter-spacing:.04em}.cvr{margin-top:18px;font-size:16px;letter-spacing:.12em}.logo-note{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}.mini{padding:13px 9px;border-radius:12px;background:#eaf2f8;text-align:center}.mini strong{font-size:13px;display:block}.mini span{font-size:11px;color:#627487}
+    .trustbar{background:#fff;border-bottom:1px solid #e6edf4}.trustgrid{display:grid;grid-template-columns:repeat(4,1fr)}.trustitem{padding:22px 20px;border-right:1px solid #e6edf4}.trustitem:last-child{border-right:0}.trustitem strong{display:block;font-size:13px}.trustitem span{display:block;color:#76869a;font-size:12px;margin-top:2px}
+    section{padding:96px 0}.soft{background:var(--soft)}.dark{background:linear-gradient(145deg,#061528,#0b2137);color:#fff}.dark .section-head p{color:#aebdce}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 8px 30px rgba(7,25,48,.05)}.card .num{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#e9f4fc;color:#0a5b97;font-weight:900;margin-bottom:18px}.card h3{font-size:20px;line-height:1.2;margin-bottom:10px}.card p{color:var(--muted);font-size:14px}
+    .fitgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.fitbox{border-radius:24px;padding:34px;background:#fff;border:1px solid var(--line)}.fitbox.darkbox{background:#0b2a48;color:#fff;border-color:#0b2a48}.fitbox h3{font-size:28px;line-height:1.1;margin-bottom:12px}.fitbox p{color:var(--muted)}.darkbox p{color:#b5c5d6}.bullets{display:grid;gap:12px;margin-top:22px}.bullet{display:flex;gap:12px;align-items:flex-start;font-size:14px}.tick{flex:0 0 25px;height:25px;border-radius:8px;display:grid;place-items:center;background:#e8f6ef;color:#0c9560;font-weight:900}.darkbox .tick{background:rgba(97,180,239,.16);color:#78c8ff}
+    .process{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:step}.step{counter-increment:step;padding:26px;border-radius:20px;background:#fff;border:1px solid var(--line)}.step:before{content:"0" counter(step);display:block;color:#2b8dcc;font-size:13px;font-weight:900;letter-spacing:.14em;margin-bottom:18px}.step h3{font-size:18px;margin-bottom:8px}.step p{font-size:13px;color:var(--muted)}.protect{margin-top:26px;border-radius:22px;padding:26px;background:linear-gradient(135deg,#0a2e50,#0d416b);color:#fff;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start}.shield{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:24px}.protect p{color:#bfd0df;font-size:14px}.protect strong{display:block;margin-bottom:5px}
+    .sectorgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.sector{padding:18px;border-radius:16px;border:1px solid #d9e4ed;background:#fff;font-size:14px;font-weight:800}.sector span{display:block;font-weight:500;color:#7b8a9b;font-size:12px;margin-top:5px}.dealgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.deal{border-radius:22px;background:#0c2741;border:1px solid #1b4365;padding:28px}.deal .label{color:#68bbf0;font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.deal h3{margin:10px 0;font-size:22px}.deal p{font-size:14px;color:#b4c4d4}.deal ul{margin:18px 0 0 18px;color:#aebdce;font-size:13px}
+    .credentials{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}.regcard{border-radius:26px;background:linear-gradient(135deg,#f7fbff,#eaf3f9);border:1px solid #d7e5ef;padding:34px}.reghead{display:flex;gap:18px;align-items:center}.badge{width:66px;height:66px;border-radius:20px;background:#0a3a66;display:grid;place-items:center;color:white;font-weight:900;font-size:18px}.regcard h3{font-size:25px}.regcard .big{font-size:32px;font-weight:900;color:#083764;margin:24px 0 2px;letter-spacing:.03em}.regcard p{color:var(--muted);font-size:13px}.assurance{display:grid;gap:12px}.assure{padding:18px 20px;border-radius:16px;background:#fff;border:1px solid var(--line)}.assure strong{display:block;font-size:14px}.assure span{display:block;font-size:12px;color:var(--muted);margin-top:4px}.certnote{margin-top:18px;padding:16px 18px;border-left:3px solid #3e94ce;background:#f2f8fc;color:#52677c;font-size:12px;border-radius:8px}
+    .cta{padding:88px 0;background:linear-gradient(145deg,#04101f,#082746);color:#fff}.cta-box{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center}.cta h2{font-size:clamp(34px,5vw,54px);letter-spacing:-.04em;line-height:1.05}.cta p{color:#aec1d4;margin-top:12px;max-width:670px}.contact-actions{display:flex;flex-direction:column;gap:10px;min-width:230px}footer{background:#030c16;color:#8295a9;padding:34px 0;font-size:12px}.foot{display:flex;justify-content:space-between;gap:25px;flex-wrap:wrap}.foot strong{color:#d6e0ea}.footer-links{display:flex;gap:16px}.footer-links a{color:#a8bacb}.legal{max-width:780px;margin-top:16px;color:#687b8e}
+    @media(max-width:980px){.hero{grid-template-columns:1fr;gap:42px}.logo-panel{max-width:620px}.trustgrid{grid-template-columns:repeat(2,1fr)}.trustitem:nth-child(2){border-right:0}.cards,.process,.dealgrid{grid-template-columns:repeat(2,1fr)}.sectorgrid{grid-template-columns:repeat(2,1fr)}.credentials,.cta-box{grid-template-columns:1fr}.contact-actions{flex-direction:row;min-width:0}}
+    @media(max-width:740px){.wrap{width:min(92vw,var(--max))}nav{height:72px}.navlinks{display:none;position:absolute;top:72px;left:0;right:0;background:#071a2e;padding:20px 4vw;flex-direction:column;align-items:flex-start;border-top:1px solid rgba(255,255,255,.1)}.navlinks.open{display:flex}.menu{display:block}.hero{padding:55px 0 70px;min-height:auto}.hero h1{font-size:52px}.hero-copy{font-size:17px}.logo-panel{padding:24px 18px}.logo-note{grid-template-columns:1fr}.trustgrid,.cards,.fitgrid,.process,.sectorgrid,.dealgrid{grid-template-columns:1fr}.trustitem{border-right:0;border-bottom:1px solid #e6edf4}.trustitem:last-child{border-bottom:0}section{padding:72px 0}.contact-actions{flex-direction:column}.cta{padding:70px 0}.reghead{align-items:flex-start}}
   </style>
 </head>
-
 <body>
-
-<header>
-  <nav>
-    <div class="logo">NORD<span>BRIDGE</span></div>
-
-    <div class="links">
-      <a href="#about">About</a>
-      <a href="#services">Services</a>
-      <a href="#sectors">Sectors</a>
-      <a href="#contact">Contact</a>
-    </div>
-  </nav>
-
-  <div class="hero">
-    <div class="hero-content">
-      <div class="tag">GLOBAL BUSINESS CONNECTIONS</div>
-
-      <h1>Connecting Opportunities.<br>Building Business.</h1>
-
-      <p>
-        NordBridge connects companies, suppliers, contractors and business
-        opportunities across international markets. We support introductions,
-        transaction coordination and business development from first contact
-        through the pre-contract stage.
-      </p>
-
-      <a class="button" href="#contact">Contact NordBridge</a>
-      <a class="button secondary" href="#services">Our Services</a>
-    </div>
-  </div>
-</header>
-
-<section class="light" id="about">
-  <h2 class="section-title">About NordBridge</h2>
-
-  <p class="intro">
-    NordBridge is an independent business introduction and transaction
-    facilitation company based in Denmark. We identify commercial
-    opportunities, connect relevant parties and coordinate communication
-    between customers, suppliers and contractors.
-  </p>
-
-  <div class="grid">
-    <div class="card">
-      <h3>Business Introductions</h3>
-      <p>
-        Connecting qualified businesses with potential customers,
-        suppliers, contractors and commercial partners.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>Transaction Facilitation</h3>
-      <p>
-        Supporting communication and coordination between parties
-        during commercial discussions and pre-contract processes.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>Business Development</h3>
-      <p>
-        Identifying opportunities in international markets and
-        developing new B2B relationships.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section class="dark-section" id="services">
-  <h2 class="section-title">What We Do</h2>
-
-  <p class="intro">
-    NordBridge operates as an independent Business Introducer,
-    Transaction Facilitator and Business Development Partner.
-  </p>
-
-  <div class="grid">
-    <div class="dark-card">
-      <h3>Opportunity Sourcing</h3>
-      <p>
-        Identification of relevant commercial opportunities,
-        procurement requirements and potential business partners.
-      </p>
-    </div>
-
-    <div class="dark-card">
-      <h3>Supplier & Contractor Matching</h3>
-      <p>
-        Matching opportunities with companies capable of providing
-        the required products, services or project execution.
-      </p>
-    </div>
-
-    <div class="dark-card">
-      <h3>Tender Coordination</h3>
-      <p>
-        Coordination and support relating to tender opportunities,
-        documentation and communication where agreed and permitted.
-      </p>
-    </div>
-
-    <div class="dark-card">
-      <h3>International B2B</h3>
-      <p>
-        Cross-border introductions and commercial coordination
-        across Europe and international markets.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section class="light" id="sectors">
-  <h2 class="section-title">Sectors</h2>
-
-  <p class="intro">
-    NordBridge evaluates opportunities across multiple industries
-    rather than operating as a product manufacturer or reseller.
-  </p>
-
-  <div class="grid">
-    <div class="card"><h3>Energy & BESS</h3><p>Energy infrastructure and battery energy storage opportunities.</p></div>
-    <div class="card"><h3>Industrial Equipment</h3><p>Machinery, automation and industrial supply opportunities.</p></div>
-    <div class="card"><h3>Infrastructure</h3><p>Construction, engineering and infrastructure projects.</p></div>
-    <div class="card"><h3>Technology</h3><p>IT infrastructure, servers, storage and technology procurement.</p></div>
-    <div class="card"><h3>Logistics</h3><p>International logistics, supply and commercial coordination.</p></div>
-    <div class="card"><h3>Other B2B Opportunities</h3><p>Selected international commercial and procurement opportunities.</p></div>
-  </div>
-</section>
-
-<section class="dark-section contact" id="contact">
-  <h2 class="section-title">Work With NordBridge</h2>
-
-  <p>
-    Companies seeking new business opportunities, contractors,
-    suppliers or international commercial connections are welcome
-    to contact NordBridge.
-  </p>
-
-  <p><strong>NordBridge</strong></p>
-  <p>Oleksandr Hutyria</p>
-  <p>CVR: 46768736</p>
-  <p>Denmark</p>
-
-  <br>
-
-  <a class="button" href="mailto:global.gpt.invest@gmail.com">
-    Email NordBridge
-  </a>
-
-  <a class="button secondary"
-     href="https://wa.me/4571887925">
-    WhatsApp
-  </a>
-</section>
-
-<footer>
-  © 2026 NordBridge · Denmark · CVR 46768736
-</footer>
-
-</body>
-</html>
+<header class="top" id="top"><div class="wrap">
+<nav><a class="brand" href="#top" aria-label="NordBridge home"><svg class="brand-mark" viewBox="0 0 320 220" aria-hidden="true"><defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5fb8f2"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M72 31v140l44-16V62zM124 65l81 61V92l-81-60zM216 58v97l44 16V31z" fill="url(#a)"/><path d="M31 141c73-48 188-50 258 0-69-30-184-32-258 0z" fill="#66bff5"/></svg><span class="brand-name">Nord<b>Bridge</b></span></a><button class="menu" aria-label="Open menu" onclick="document.querySelector('.navlinks').classList.toggle('open')">☰</button><div class="navlinks"><a href="#services">Services</a><a href="#process">How We Work</a><a href="#sectors">Sectors</a><a href="#assurance">Assurance</a><a class="nav-cta" href="#contact">Contact</a></div></nav>
+<div class="hero"><div><div class="eyebrow">Independent B2B Introducer · Denmark</div><h1>Connecting Business.<br><span>Creating Opportunities.</span></h1><p class="hero-copy">NordBridge connects capable contractors and suppliers with international commercial and procurement opportunities. We coordinate introductions, document review and pre-contract communication under clear written terms.</p><div class="hero-actions"><a class="btn primary" href="mailto:global.gpt.invest@gmail.com?subject=NordBridge%20-%20Company%20Profile">Submit Company Profile →</a><a class="btn ghost" href="https://wa.me/4571887925" target="_blank" rel="noopener">WhatsApp</a></div><div class="hero-meta"><span><strong>CVR</strong> 46768736</span><span><strong>Role</strong> Business Introducer / Transaction Facilitator</span><span><strong>Scope</strong> International B2B</span></div></div>
+<div class="logo-panel"><div class="hero-logo"><svg class="hero-symbol" viewBox="0 0 320 220" aria-hidden="true"><defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#062c55"/><stop offset="1" stop-color="#5aa0cf"/></linearGradient></defs><path d="M72 31v140l44-16V62zM124 65l81 61V92l-81-60zM216 58v97l44 16V31z" fill="url(#b)"/><path d="M31 141c73-48 188-50 258 0-69-30-184-32-258 0z" fill="#0b4d82"/></svg><div class="hero-logo-name">Nord<span>Bridge</span></div><div class="hero-tagline">Connecting Business. Creating Opportunities.</div><div class="cvr">CVR: 46768736</div></div><div class="logo-note"><div class="mini"><strong>Global</strong><span>Cross-border B2B</span></div><div class="mini"><strong>Protected</strong><span>Written terms</span></div><div class="mini"><strong>Independent</strong><span>No buyer affiliation</span></div></div></div></div></div></header>
+<div class="trustbar"><div class="wrap trustgrid"><div class="trustitem"><strong>Denmark Registered</strong><span>CVR 46768736</span></div><div class="trustitem"><strong>Protected Introductions</strong><span>Confidentiality & non-circumvention where agreed</span></div><div class="trustitem"><strong>Procurement Support</strong><span>Document and compliance coordination</span></div><div class="trustitem"><strong>Global Reach</strong><span>Europe · Africa · Middle East · Asia</span></div></div></div>
+<section id="services"><div class="wrap"><div class="section-head"><div class="eyebrow">What we do</div><h2>From opportunity discovery to a protected business connection.</h2><p>NordBridge works on the commercial coordination layer between buyers, contractors and suppliers. The contracting parties remain responsible for their own technical, legal and commercial commitments.</p></div><div class="cards"><article class="card"><div class="num">01</div><h3>Opportunity & Tender Sourcing</h3><p>We identify procurement and commercial opportunities that match a company's real capabilities, geography and delivery profile.</p></article><article class="card"><div class="num">02</div><h3>Contractor & Supplier Matching</h3><p>We connect relevant buyers and opportunities with companies capable of supplying the required products, services or project execution.</p></article><article class="card"><div class="num">03</div><h3>Tender Document Support</h3><p>Review of requirements, eligibility, missing documents, deadlines and submission readiness. Submission support is provided only where permitted and authorized in writing.</p></article><article class="card"><div class="num">04</div><h3>Pre-Contract Coordination</h3><p>Structured communication, clarifications, document exchange and commercial follow-up through the pre-contract stage.</p></article><article class="card"><div class="num">05</div><h3>Supplier & Subcontractor Sourcing</h3><p>Identification of relevant suppliers, specialist subcontractors and supporting partners where a tender or project requires them.</p></article><article class="card"><div class="num">06</div><h3>International Business Development</h3><p>Independent cross-border introductions for companies seeking new markets, procurement channels and commercial relationships.</p></article></div></div></section>
+<section class="soft"><div class="wrap"><div class="fitgrid"><div class="fitbox darkbox"><div class="eyebrow">For contractors & suppliers</div><h3>Bring capability. We help find the opportunity.</h3><p>Companies can submit a profile, licenses, geographic coverage and technical capabilities. NordBridge uses that information to identify suitable opportunities.</p><div class="bullets"><div class="bullet"><span class="tick">✓</span><span>Tenders and direct commercial opportunities matched to actual capability.</span></div><div class="bullet"><span class="tick">✓</span><span>Protected disclosure for opportunities where commercial protection is required.</span></div><div class="bullet"><span class="tick">✓</span><span>Optional document and submission support under a separate written scope.</span></div></div></div><div class="fitbox"><div class="eyebrow">For buyers & project owners</div><h3>Need a capable supplier or contractor?</h3><p>NordBridge can identify and introduce suitable companies for a defined requirement, project, supply package or specialist service.</p><div class="bullets"><div class="bullet"><span class="tick">✓</span><span>Supplier and contractor identification across multiple sectors.</span></div><div class="bullet"><span class="tick">✓</span><span>Capability screening and structured introduction.</span></div><div class="bullet"><span class="tick">✓</span><span>Commercial coordination without replacing the buyer's procurement process.</span></div></div></div></div></div></section>
+<section id="process"><div class="wrap"><div class="section-head"><div class="eyebrow">How we work</div><h2>A clear, protected process.</h2><p>For selected opportunities, identifying details are disclosed only after the relevant commercial and confidentiality protections are in place.</p></div><div class="process"><article class="step"><h3>Capability Review</h3><p>We review the contractor or supplier profile against the opportunity's scope and eligibility requirements.</p></article><article class="step"><h3>Protected Opportunity Summary</h3><p>Where required, an initial non-identifying description is shared before buyer, tender reference, links or documents are disclosed.</p></article><article class="step"><h3>Written Commercial Terms</h3><p>The parties agree the applicable Introducer / Success Fee, support scope, confidentiality and non-circumvention terms in writing.</p></article><article class="step"><h3>Controlled Disclosure</h3><p>After protection is agreed, the available opportunity details and documents can be shared for review.</p></article><article class="step"><h3>Tender & Document Coordination</h3><p>NordBridge may support compliance checks, missing-document control, clarifications and submission preparation where agreed.</p></article><article class="step"><h3>Direct Contracting</h3><p>The buyer and contractor contract directly. NordBridge's remuneration follows the written agreement and agreed payment triggers.</p></article></div><div class="protect"><div class="shield">◇</div><div><strong>Commercial protection before sensitive disclosure</strong><p>Buyer names, tender references, links, solicitation documents and other identifying details may be withheld until appropriate written protection is in place. This protects the introduced opportunity without interfering with applicable procurement rules.</p></div></div></div></section>
+<section class="dark" id="commercial"><div class="wrap"><div class="section-head"><div class="eyebrow">Commercial structures</div><h2>Flexible terms for different transaction types.</h2><p>Commercial terms are agreed case by case and documented before protected information is disclosed.</p></div><div class="dealgrid"><article class="deal"><div class="label">Model 01</div><h3>Success-Based Introduction</h3><p>An introduction or transaction facilitation fee linked to a successful contract, order or agreed commercial milestone.</p><ul><li>Percentage agreed in writing</li><li>Defined payment triggers</li><li>Non-circumvention protection</li></ul></article><article class="deal"><div class="label">Model 02</div><h3>Tender Support</h3><p>Separate paid support for document preparation, review and bid coordination, with success-based terms where separately agreed.</p><ul><li>Scope defined before work starts</li><li>Document and deadline control</li><li>Authorized submission support where permitted</li></ul></article><article class="deal"><div class="label">Model 03</div><h3>Long-Term Orders</h3><p>Written fee mechanics for framework contracts, call-offs, staged payments, extensions, renewals and repeat orders arising from an introduction.</p><ul><li>Payment schedule defined in agreement</li><li>Actual contract/order value tracked where applicable</li><li>Extensions and renewals can be covered</li></ul></article></div></div></section>
+<section id="sectors"><div class="wrap"><div class="section-head"><div class="eyebrow">Current focus</div><h2>Multi-sector international opportunity sourcing.</h2><p>NordBridge evaluates opportunities across sectors based on contractor capability rather than acting as a manufacturer or reseller.</p></div><div class="sectorgrid"><div class="sector">Energy & BESS<span>Storage, power and energy infrastructure</span></div><div class="sector">Automation & Telemetry<span>SCADA, industrial networks and control</span></div><div class="sector">IT & Software<span>Infrastructure, systems and digital procurement</span></div><div class="sector">Medical & Laboratory<span>Equipment, laboratory and technical supply</span></div><div class="sector">Industrial Equipment<span>Machinery, systems and specialist supply</span></div><div class="sector">Infrastructure & Engineering<span>Construction, engineering and project execution</span></div><div class="sector">Water & Utilities<span>Water systems, monitoring and equipment</span></div><div class="sector">Logistics & Protective Supply<span>Logistics, specialized supply and protective equipment</span></div></div></div></section>
+<section class="soft" id="assurance"><div class="wrap"><div class="section-head"><div class="eyebrow">Registration & assurance</div><h2>Professional positioning without inflated claims.</h2><p>NordBridge presents verified registration and uses written commercial protections. Third-party licenses or certifications are referenced only when they can be substantiated.</p></div><div class="credentials"><div class="regcard"><div class="reghead"><div class="badge">DK</div><div><h3>Danish Business Registration</h3><p>NordBridge · Oleksandr Hutyria · Denmark</p></div></div><div class="big">CVR 46768736</div><p>Business registration identifier used in NordBridge commercial correspondence and agreements.</p><div class="certnote">No unverified certificates are displayed. Verified company certificates, licenses or third-party credentials can be added here when documentary evidence is available.</div></div><div class="assurance"><div class="assure"><strong>Written Introducer / Success Fee Agreements</strong><span>Scope, fee, triggers and protected opportunity defined in writing.</span></div><div class="assure"><strong>Confidentiality & Non-Circumvention</strong><span>Used where appropriate to protect introduced opportunities and resulting business.</span></div><div class="assure"><strong>Verification-First Approach</strong><span>Contractor documents, licenses and credentials can be reviewed where relevant to the opportunity.</span></div><div class="assure"><strong>Procurement-Safe Positioning</strong><span>NordBridge does not represent the contracting authority, promise awards or bypass procurement rules.</span></div></div></div></div></section>
+<section class="cta" id="contact"><div class="wrap cta-box"><div><div class="eyebrow">Start a conversation</div><h2>Looking for opportunities — or the right contractor?</h2><p>Send a company profile, capability statement or a clear procurement requirement. NordBridge will assess the fit and coordinate the next commercial step.</p></div><div class="contact-actions"><a class="btn primary" href="mailto:global.gpt.invest@gmail.com?subject=NordBridge%20Business%20Enquiry">global.gpt.invest@gmail.com</a><a class="btn ghost" href="https://wa.me/4571887925" target="_blank" rel="noopener">WhatsApp +45 71 88 79 25</a></div></div></section>
+<footer><div class="wrap"><div class="foot"><div><strong>NordBridge</strong> · Denmark · CVR 46768736</div><div class="footer-links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div></div><p class="legal">NordBridge is an independent commercial introducer and coordinator. Website information is general and does not constitute a tender award, buyer representation, legal advice, or a binding offer. Specific services, confidentiality obligations, remuneration and transaction protections are governed by written agreements between the relevant parties.</p></div></footer>
+<script>document.querySelectorAll('.navlinks a').forEach(a=>a.addEventListener('click',()=>document.querySelector('.navlinks').classList.remove('open')))</script>
+</body></html>
