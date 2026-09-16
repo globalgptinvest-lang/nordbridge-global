@@ -1,0 +1,37 @@
+name: Replace NordBridge email
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  replace-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Replace email across HTML files
+        shell: bash
+        run: |
+          if grep -RIl --include='*.html' 'global.gpt.invest@gmail.com' .; then
+            find . -name '*.html' -type f -print0 | xargs -0 sed -i 's/global\.gpt\.invest@gmail\.com/nordbrige.dk@gmail.com/g'
+          fi
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No email replacements needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add '*.html'
+          git commit -m 'Change NordBridge contact email'
+          git push
