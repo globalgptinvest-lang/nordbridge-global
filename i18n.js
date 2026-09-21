@@ -55,4 +55,29 @@ ar:{
 "We support structured communication through the pre-contract stage.":"ندعم التواصل المنظم خلال مرحلة ما قبل التعاقد."
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],indexExtra[l]);
+const homepageUkComplete={
+"Connect with relevant contractors, suppliers, buyers and project partners across international markets.":"Зв’язуємо з відповідними підрядниками, постачальниками, покупцями та проєктними партнерами на міжнародних ринках.",
+"Find procurement opportunities that fit real company capability, geography and sector experience.":"Знаходимо закупівельні можливості, що відповідають реальним можливостям компанії, географії та галузевому досвіду.",
+"Source credible commercial counterparts for defined project, equipment and service requirements.":"Знаходимо надійних комерційних контрагентів під визначені вимоги проєкту, обладнання чи послуг.",
+"A clear role in international B2B transactions.":"Чітка роль у міжнародних B2B-угодах.",
+"NordBridge acts as an independent business introducer and transaction facilitator. We identify relevant opportunities, connect suitable parties and coordinate the commercial process up to direct contracting, while the principal parties remain responsible for their own legal, technical, financial and commercial decisions.":"NordBridge діє як незалежний бізнес-посередник і координатор угод. Ми знаходимо релевантні можливості, з’єднуємо відповідні сторони та координуємо комерційний процес до прямого укладення контракту. Основні сторони самостійно відповідають за юридичні, технічні, фінансові та комерційні рішення.",
+"Denmark-registered business, CVR 46768736.":"Бізнес зареєстрований у Данії, CVR 46768736.",
+"Tender and procurement opportunity sourcing.":"Пошук тендерних і закупівельних можливостей.",
+"Contractor, supplier and buyer introductions.":"Знайомство з підрядниками, постачальниками та покупцями.",
+"Written commercial protection where appropriate.":"Письмовий комерційний захист, де це необхідно.",
+"See Our Approach":"Переглянути наш підхід",
+"About NordBridge":"Про NordBridge",
+"Looking for a tender, supplier, contractor or business partner?":"Шукаєте тендер, постачальника, підрядника або бізнес-партнера?",
+"Send your company profile, capability statement or procurement requirement. NordBridge will review the fit and identify the most relevant next step.":"Надішліть профіль компанії, опис можливостей або закупівельну потребу. NordBridge оцінить відповідність і визначить найбільш доречний наступний крок.",
+"Choose the route that fits your company.":"Оберіть варіант співпраці, який відповідає вашій компанії.",
+"Tender Support":"Тендерний супровід",
+"Send Us Your Tender":"Надішліть нам ваш тендер",
+"Request requirements analysis, document review and compliance support.":"Замовте аналіз вимог, перевірку документів і супровід відповідності.",
+"Contractors & Suppliers":"Підрядники та постачальники",
+"Send your capabilities and target markets for opportunity sourcing.":"Надішліть інформацію про можливості компанії та цільові ринки для пошуку відповідних проєктів.",
+"Buyers":"Покупці",
+"Send a procurement requirement for international counterpart sourcing.":"Надішліть закупівельну потребу для пошуку міжнародного підрядника або постачальника.",
+"NordBridge is an independent business introducer and transaction facilitator. Specific services, confidentiality obligations, fees and transaction protections are governed by written agreements between the relevant parties.":"NordBridge — незалежний бізнес-посередник і координатор угод. Конкретні послуги, зобов’язання щодо конфіденційності, винагорода та захист угод регулюються письмовими угодами між відповідними сторонами.",
+"Matching":"Підбір"
+};Object.assign(translations.uk,homepageUkComplete);
 const original=new WeakMap();function walk(el,lang){for(const n of el.childNodes){if(n.nodeType===3){const raw=n.nodeValue,trim=raw.trim();if(!trim)continue;if(!original.has(n))original.set(n,trim);const base=original.get(n);n.nodeValue=raw.replace(trim,lang==="en"?base:(translations[lang]?.[base]||base));}else if(n.nodeType===1&&!["SCRIPT","STYLE"].includes(n.tagName))walk(n,lang);}}function setLang(lang){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";walk(document.body,lang);localStorage.setItem("nordbridge-lang",lang);document.querySelectorAll("[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));}function init(){if(!document.querySelector("[data-lang]")){const box=document.createElement("div");box.className="language-switcher floating-language";box.setAttribute("aria-label","Language");box.innerHTML='<button type="button" data-lang="en">EN</button><button type="button" data-lang="uk">UA</button><button type="button" data-lang="da">DA</button><button type="button" data-lang="ar">AR</button>';document.body.prepend(box);}document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));setLang(localStorage.getItem("nordbridge-lang")||"en");}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();})();
