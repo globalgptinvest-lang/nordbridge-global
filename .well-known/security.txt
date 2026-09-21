@@ -1,0 +1,4 @@
+Contact: mailto:info@nordbridge-global.com
+Canonical: https://nordbridge-global.com/.well-known/security.txt
+Preferred-Languages: en, uk, da
+Expires: 2027-09-21T23:59:59Z
