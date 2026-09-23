@@ -80,7 +80,61 @@ const homepageUkComplete={
 "NordBridge is an independent business introducer and transaction facilitator. Specific services, confidentiality obligations, fees and transaction protections are governed by written agreements between the relevant parties.":"NordBridge — незалежний бізнес-посередник і координатор угод. Конкретні послуги, зобов’язання щодо конфіденційності, винагорода та захист угод регулюються письмовими угодами між відповідними сторонами.",
 "Matching":"Підбір"
 };Object.assign(translations.uk,homepageUkComplete);
-const extraUi={uk:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"Я погоджуюсь, що NordBridge може використовувати надану тут інформацію для розгляду та відповіді на цей діловий запит.","Privacy Notice":"Повідомлення про конфіденційність"},da:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"Jeg accepterer, at NordBridge må bruge de oplysninger, jeg indsender her, til at vurdere og besvare denne forretningshenvendelse.","Privacy Notice":"Privatlivsmeddelelse"},ar:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"أوافق على أن تستخدم NordBridge المعلومات المقدمة هنا لمراجعة هذا الاستفسار التجاري والرد عليه.","Privacy Notice":"إشعار الخصوصية"}};for(const l of ["uk","da","ar"])Object.assign(translations[l],extraUi[l]);const original=new WeakMap();
+const extraUi={uk:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"Я погоджуюсь, що NordBridge може використовувати надану тут інформацію для розгляду та відповіді на цей діловий запит.","Privacy Notice":"Повідомлення про конфіденційність"},da:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"Jeg accepterer, at NordBridge må bruge de oplysninger, jeg indsender her, til at vurdere og besvare denne forretningshenvendelse.","Privacy Notice":"Privatlivsmeddelelse"},ar:{"I agree that NordBridge may use the information submitted here to review and respond to this business enquiry.":"أوافق على أن تستخدم NordBridge المعلومات المقدمة هنا لمراجعة هذا الاستفسار التجاري والرد عليه.","Privacy Notice":"إشعار الخصوصية"}};for(const l of ["uk","da","ar"])Object.assign(translations[l],extraUi[l]);const pageFix={uk:{
+"Independent. International. Business-focused.":"Незалежність. Міжнародність. Орієнтація на бізнес.",
+"A bridge between commercial opportunity and real capability.":"Міст між комерційною можливістю та реальними можливостями виконавця.",
+"Practical B2B support around live commercial opportunities":"Практичний B2B-супровід актуальних комерційних можливостей",
+"Clear steps. Protected introductions. Direct contracting.":"Чіткі кроки. Захищені знайомства. Пряме укладення контрактів.",
+"A six-step commercial process":"Комерційний процес із шести кроків",
+"Protection & transparency":"Захист і прозорість",
+"Commercial protection without overstating our role.":"Комерційний захист без перебільшення ролі NordBridge.",
+"International opportunities across key B2B sectors.":"Міжнародні можливості в ключових B2B-галузях.",
+"Sector focus":"Галузевий фокус",
+"Where we actively look for business connections":"Де ми активно шукаємо бізнес-зв’язки",
+"Energy & Renewable Technologies":"Енергетика та відновлювані технології",
+"Data Centers & IT Infrastructure":"Дата-центри та ІТ-інфраструктура",
+"Industrial Equipment & Machinery":"Промислове обладнання та машини",
+"Logistics & Supply Chain":"Логістика та ланцюги постачання",
+"Real Estate & Development":"Нерухомість і девелопмент",
+"Global Procurement & Tenders":"Глобальні закупівлі та тендери",
+"Infrastructure & Engineering":"Інфраструктура та інжиніринг",
+"Water & Utilities":"Вода та комунальна інфраструктура",
+"Medical & Laboratory":"Медичне та лабораторне обладнання",
+"Connecting capability with real commercial demand.":"Поєднуємо реальні можливості компаній із комерційним попитом.",
+"Two ways to work with NordBridge":"Два способи співпраці з NordBridge",
+"Opportunity protection":"Захист можливості",
+"Identifying details may be disclosed in stages":"Ідентифікуючі деталі можуть розкриватися поетапно",
+"Commercial models":"Комерційні моделі",
+"Different opportunities require different structures.":"Різні можливості потребують різних моделей співпраці.",
+"Current Opportunity Areas":"Поточні напрямки можливостей",
+"International opportunities currently being sourced":"Міжнародні можливості, за якими зараз ведеться пошук",
+"Privacy Notice":"Повідомлення про конфіденційність",
+"Website forms":"Форми на сайті",
+"Cookies and analytics":"Файли cookie та аналітика",
+"Website Terms":"Умови використання сайту",
+"No buyer representation or award guarantee":"Відсутність представництва замовника та гарантії перемоги",
+"Commercial support built around real transactions.":"Комерційний супровід, побудований навколо реальних угод.",
+"Core services":"Основні послуги",
+"Choose the service that matches your business need":"Оберіть послугу відповідно до потреб вашого бізнесу",
+"Bring capability. We help connect it to demand.":"Маєте можливості — ми допомагаємо поєднати їх із попитом.",
+"Fixed-fee tender support and bid-document review":"Тендерний супровід за фіксовану оплату та перевірка документів заявки",
+"Start with a clear business enquiry.":"Почніть із чіткого бізнес-запиту.",
+"Help us assess the fit quickly":"Допоможіть нам швидко оцінити відповідність",
+"Choose your enquiry":"Оберіть тип запиту",
+"Go directly to the right starting point":"Перейдіть одразу до потрібного варіанта",
+"Page not found.":"Сторінку не знайдено.",
+"The page may have moved or the address may be incorrect.":"Можливо, сторінку переміщено або адресу введено неправильно.",
+"Return to NordBridge":"Повернутися до NordBridge",
+"Open WhatsApp":"Відкрити WhatsApp",
+"Email NordBridge":"Написати NordBridge"
+},da:{
+"Page not found.":"Siden blev ikke fundet.","The page may have moved or the address may be incorrect.":"Siden kan være flyttet, eller adressen kan være forkert.","Return to NordBridge":"Tilbage til NordBridge",
+"Start with a clear business enquiry.":"Start med en klar forretningsforespørgsel.","Privacy Notice":"Privatlivsmeddelelse","Website Terms":"Vilkår for hjemmesiden","Core services":"Kernetjenester","Commercial models":"Kommercielle modeller"
+},ar:{
+"Page not found.":"الصفحة غير موجودة.","The page may have moved or the address may be incorrect.":"ربما تم نقل الصفحة أو أن العنوان غير صحيح.","Return to NordBridge":"العودة إلى NordBridge",
+"Start with a clear business enquiry.":"ابدأ باستفسار تجاري واضح.","Privacy Notice":"إشعار الخصوصية","Website Terms":"شروط الموقع","Core services":"الخدمات الأساسية","Commercial models":"النماذج التجارية"
+}};for(const l of ["uk","da","ar"])Object.assign(translations[l],pageFix[l]);
+const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
   if(lang==="en") return text;
