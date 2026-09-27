@@ -17,3 +17,5 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .trust-item span{font-size:14px;color:#617286}
 @media(max-width:860px){.trust-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:540px){.nav-inner{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:12px 4vw;scrollbar-width:none}.nav-inner::-webkit-scrollbar{display:none}.nav a{white-space:nowrap}.trust-grid{grid-template-columns:1fr}.lead-form{grid-template-columns:1fr}.lead-form label,.lead-form .btn{grid-column:1/-1}}
+
+.lead-form select{width:100%;padding:14px;border:1px solid #cfdce7;border-radius:8px;font:inherit;background:#fff;color:#17344f}
