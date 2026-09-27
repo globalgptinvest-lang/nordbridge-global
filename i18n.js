@@ -502,6 +502,42 @@ ar:{
 "Website information is general. Specific services, confidentiality, fees, payment triggers and transaction protections are governed by the written agreement applicable to the specific business relationship.":"معلومات الموقع عامة. تخضع الخدمات المحددة والسرية والرسوم وشروط الدفع وحماية المعاملات للاتفاقية المكتوبة المطبقة على علاقة العمل المحددة."
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],auditedBodyGapsA[l]);
+
+const auditedBodyGapsB={
+uk:{
+"A bid can be commercially strong and still face rejection if a mandatory form, declaration, certificate, signature, format or eligibility requirement is missed. The review is designed to surface those gaps before submission.":"Комерційно сильна заявка все одно може бути відхилена, якщо пропущено обов’язкову форму, декларацію, сертифікат, підпис, формат або вимогу щодо відповідності. Перевірка допомагає виявити такі прогалини до подання.",
+"Map required forms, declarations, certificates, references, signatures, formats and submission instructions.":"Систематизувати необхідні форми, декларації, сертифікати, рекомендації, підписи, формати та інструкції з подання.",
+"Review stated qualification criteria and flag information that appears missing, unclear or unsupported.":"Перевірити заявлені кваліфікаційні критерії та позначити інформацію, якої бракує, яка є незрозумілою або не підтверджена.",
+"Check the document set for obvious gaps or inconsistencies against the published procurement requirements.":"Перевірити комплект документів на очевидні прогалини або невідповідності опублікованим вимогам закупівлі.",
+"Provide a practical list of outstanding items for the bidder to resolve before final submission.":"Надати практичний перелік невирішених питань, які учасник має закрити перед остаточним поданням.",
+"NordBridge can review the procurement package and the documents provided by the bidder. The bidder remains responsible for factual accuracy, pricing, technical commitments, legal representations and the final submission.":"NordBridge може перевірити пакет закупівлі та документи, надані учасником. Учасник залишається відповідальним за точність фактів, ціноутворення, технічні зобов’язання, юридичні заяви та остаточне подання.",
+"The scope and professional fee are agreed before work begins. Where appropriate, broader tender-document support can be added separately.":"Обсяг робіт і професійна винагорода погоджуються до початку роботи. За потреби розширений супровід тендерної документації може бути погоджений окремо.",
+"Send the tender reference or link, deadline and current document status for an initial scope review.":"Надішліть номер або посилання на тендер, дедлайн і поточний стан документів для первинної оцінки обсягу робіт.",
+"NordBridge provides independent commercial support and does not guarantee tender awards. Final responsibility for the bid and submission remains with the bidder.":"NordBridge надає незалежний комерційний супровід і не гарантує перемогу в тендері. Остаточна відповідальність за заявку та її подання залишається за учасником."
+},
+da:{
+"A bid can be commercially strong and still face rejection if a mandatory form, declaration, certificate, signature, format or eligibility requirement is missed. The review is designed to surface those gaps before submission.":"Et tilbud kan være kommercielt stærkt og stadig blive afvist, hvis en obligatorisk formular, erklæring, attest, underskrift, format- eller kvalifikationskrav mangler. Gennemgangen skal afdække sådanne mangler før indsendelse.",
+"Map required forms, declarations, certificates, references, signatures, formats and submission instructions.":"Kortlæg nødvendige formularer, erklæringer, certifikater, referencer, underskrifter, formater og indsendelsesinstruktioner.",
+"Review stated qualification criteria and flag information that appears missing, unclear or unsupported.":"Gennemgå de angivne kvalifikationskriterier og markér oplysninger, der mangler, er uklare eller ikke dokumenterede.",
+"Check the document set for obvious gaps or inconsistencies against the published procurement requirements.":"Kontrollér dokumentsættet for tydelige mangler eller uoverensstemmelser med de offentliggjorte udbudskrav.",
+"Provide a practical list of outstanding items for the bidder to resolve before final submission.":"Udarbejd en praktisk liste over udestående punkter, som tilbudsgiveren skal løse før endelig indsendelse.",
+"NordBridge can review the procurement package and the documents provided by the bidder. The bidder remains responsible for factual accuracy, pricing, technical commitments, legal representations and the final submission.":"NordBridge kan gennemgå udbudsmaterialet og dokumenterne fra tilbudsgiveren. Tilbudsgiveren er fortsat ansvarlig for faktuel korrekthed, priser, tekniske forpligtelser, juridiske erklæringer og den endelige indsendelse.",
+"The scope and professional fee are agreed before work begins. Where appropriate, broader tender-document support can be added separately.":"Omfang og professionelt honorar aftales, før arbejdet begynder. Hvor relevant kan mere omfattende udbudsdokumentsupport tilføjes separat.",
+"Send the tender reference or link, deadline and current document status for an initial scope review.":"Send udbudsreference eller link, deadline og den aktuelle dokumentstatus til en indledende vurdering af omfanget.",
+"NordBridge provides independent commercial support and does not guarantee tender awards. Final responsibility for the bid and submission remains with the bidder.":"NordBridge yder uafhængig kommerciel støtte og garanterer ikke tildeling. Det endelige ansvar for tilbuddet og indsendelsen ligger hos tilbudsgiveren."
+},
+ar:{
+"A bid can be commercially strong and still face rejection if a mandatory form, declaration, certificate, signature, format or eligibility requirement is missed. The review is designed to surface those gaps before submission.":"قد يكون العرض قوياً تجارياً ومع ذلك يتعرض للرفض إذا غاب نموذج إلزامي أو إقرار أو شهادة أو توقيع أو تنسيق أو شرط أهلية. وتهدف المراجعة إلى كشف هذه النواقص قبل التقديم.",
+"Map required forms, declarations, certificates, references, signatures, formats and submission instructions.":"حصر النماذج والإقرارات والشهادات والمراجع والتوقيعات والتنسيقات وتعليمات التقديم المطلوبة.",
+"Review stated qualification criteria and flag information that appears missing, unclear or unsupported.":"مراجعة معايير التأهيل المحددة وتحديد المعلومات التي تبدو ناقصة أو غير واضحة أو غير مدعومة.",
+"Check the document set for obvious gaps or inconsistencies against the published procurement requirements.":"فحص مجموعة المستندات لاكتشاف النواقص أو أوجه عدم الاتساق الواضحة مقارنة بمتطلبات المشتريات المنشورة.",
+"Provide a practical list of outstanding items for the bidder to resolve before final submission.":"تقديم قائمة عملية بالنقاط المتبقية التي ينبغي لمقدم العرض معالجتها قبل التقديم النهائي.",
+"NordBridge can review the procurement package and the documents provided by the bidder. The bidder remains responsible for factual accuracy, pricing, technical commitments, legal representations and the final submission.":"يمكن لـ NordBridge مراجعة حزمة المشتريات والمستندات المقدمة من مقدم العرض. ويظل مقدم العرض مسؤولاً عن دقة المعلومات والأسعار والالتزامات الفنية والإقرارات القانونية والتقديم النهائي.",
+"The scope and professional fee are agreed before work begins. Where appropriate, broader tender-document support can be added separately.":"يتم الاتفاق على نطاق العمل والأتعاب المهنية قبل بدء العمل. وعند الاقتضاء يمكن إضافة دعم أوسع لوثائق المناقصة بشكل منفصل.",
+"Send the tender reference or link, deadline and current document status for an initial scope review.":"أرسل مرجع المناقصة أو الرابط والموعد النهائي والحالة الحالية للمستندات لإجراء تقييم أولي لنطاق العمل.",
+"NordBridge provides independent commercial support and does not guarantee tender awards. Final responsibility for the bid and submission remains with the bidder.":"تقدم NordBridge دعماً تجارياً مستقلاً ولا تضمن الفوز بالمناقصة. وتبقى المسؤولية النهائية عن العرض والتقديم على عاتق مقدم العرض."
+}};
+for(const l of ["uk","da","ar"])Object.assign(translations[l],auditedBodyGapsB[l]);
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
