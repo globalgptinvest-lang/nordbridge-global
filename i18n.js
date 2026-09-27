@@ -377,6 +377,17 @@ ar:{
 "Qualification":"التأهيل","UN / Institutional":"الأمم المتحدة / مؤسسي","Analysis":"التحليل","Company country":"بلد الشركة","Procurement type":"نوع المشتريات","Prequalification":"التأهيل المسبق","Other / Not sure":"أخرى / غير متأكد","Tender language":"لغة المناقصة","Urgency":"الاستعجال","More than 14 days":"أكثر من 14 يوماً","Not reviewed yet":"لم تتم المراجعة بعد","Support needed":"الدعم المطلوب","Enquiry received.":"تم استلام الاستفسار.","Have a deadline?":"هل لديك موعد نهائي؟","Contractors & suppliers":"المقاولون والموردون"
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],auditBatch2[l]);
+
+/* Locale integrity checks and head fallbacks */
+const localeKeys=["uk","da","ar"];
+localeKeys.forEach(function(code){ if(!translations[code]) translations[code]={}; });
+function localizeHeadFallback(lang){
+ if(lang==="en"||!translations[lang]) return;
+ const d=translations[lang], title=document.title.trim();
+ if(d[title]) document.title=d[title];
+ const desc=document.querySelector('meta[name="description"]');
+ if(desc){const v=(desc.content||"").trim();if(d[v])desc.content=d[v];}
+}
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
