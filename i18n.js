@@ -418,6 +418,45 @@ ar:{
 "Support the process while final contracts remain between the principal parties.":"دعم العملية مع بقاء العقود النهائية بين الأطراف الرئيسية."
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],finalLongGaps[l]);
+
+const auditedHeadTitles={
+uk:{
+"About NordBridge Denmark | International B2B & Tender Support":"Про NordBridge Denmark | Міжнародний B2B та тендерний супровід",
+"How NordBridge Denmark Works | Tender & B2B Introductions":"Як працює NordBridge Denmark | Тендери та B2B-знайомства",
+"Bid Compliance Review & Tender Checklist | NordBridge Denmark":"Перевірка відповідності заявки та тендерний чекліст | NordBridge Denmark",
+"International B2B Introductions & Partner Matching | NordBridge Denmark":"Міжнародні B2B-знайомства та підбір партнерів | NordBridge Denmark",
+"Find Contractors & Suppliers | NordBridge Denmark":"Пошук підрядників і постачальників | NordBridge Denmark",
+"International Tender Opportunity Sourcing | NordBridge Denmark":"Пошук міжнародних тендерних можливостей | NordBridge Denmark",
+"Contact NordBridge Denmark | Tender & Procurement Support":"Контакти NordBridge Denmark | Тендерний та закупівельний супровід",
+"Find Contractors & Suppliers Worldwide | NordBridge Denmark":"Пошук підрядників і постачальників у світі | NordBridge Denmark",
+"Find International Tenders & Procurement Opportunities | NordBridge Denmark":"Пошук міжнародних тендерів і закупівель | NordBridge Denmark",
+"NordBridge Denmark | Tender Support, Contractor Sourcing & Procurement":"NordBridge Denmark | Тендерний супровід, пошук підрядників і закупівлі"
+},
+da:{
+"About NordBridge Denmark | International B2B & Tender Support":"Om NordBridge Denmark | International B2B- og udbudssupport",
+"How NordBridge Denmark Works | Tender & B2B Introductions":"Sådan arbejder NordBridge Denmark | Udbud og B2B-introduktioner",
+"Bid Compliance Review & Tender Checklist | NordBridge Denmark":"Tilbudskontrol og udbudstjekliste | NordBridge Denmark",
+"International B2B Introductions & Partner Matching | NordBridge Denmark":"Internationale B2B-introduktioner og partnermatch | NordBridge Denmark",
+"Find Contractors & Suppliers | NordBridge Denmark":"Find entreprenører og leverandører | NordBridge Denmark",
+"International Tender Opportunity Sourcing | NordBridge Denmark":"Søgning efter internationale udbudsmuligheder | NordBridge Denmark",
+"Contact NordBridge Denmark | Tender & Procurement Support":"Kontakt NordBridge Denmark | Udbuds- og indkøbssupport",
+"Find Contractors & Suppliers Worldwide | NordBridge Denmark":"Find entreprenører og leverandører globalt | NordBridge Denmark",
+"Find International Tenders & Procurement Opportunities | NordBridge Denmark":"Find internationale udbud og indkøbsmuligheder | NordBridge Denmark",
+"NordBridge Denmark | Tender Support, Contractor Sourcing & Procurement":"NordBridge Denmark | Udbudssupport, leverandørsøgning og indkøb"
+},
+ar:{
+"About NordBridge Denmark | International B2B & Tender Support":"حول NordBridge Denmark | دعم الأعمال والمناقصات الدولية",
+"How NordBridge Denmark Works | Tender & B2B Introductions":"كيف تعمل NordBridge Denmark | المناقصات والتعريف بين الشركات",
+"Bid Compliance Review & Tender Checklist | NordBridge Denmark":"مراجعة امتثال العطاء وقائمة التحقق | NordBridge Denmark",
+"International B2B Introductions & Partner Matching | NordBridge Denmark":"التعريف الدولي بين الشركات ومطابقة الشركاء | NordBridge Denmark",
+"Find Contractors & Suppliers | NordBridge Denmark":"العثور على المقاولين والموردين | NordBridge Denmark",
+"International Tender Opportunity Sourcing | NordBridge Denmark":"البحث عن فرص المناقصات الدولية | NordBridge Denmark",
+"Contact NordBridge Denmark | Tender & Procurement Support":"اتصل بـ NordBridge Denmark | دعم المناقصات والمشتريات",
+"Find Contractors & Suppliers Worldwide | NordBridge Denmark":"العثور على المقاولين والموردين عالمياً | NordBridge Denmark",
+"Find International Tenders & Procurement Opportunities | NordBridge Denmark":"العثور على المناقصات وفرص المشتريات الدولية | NordBridge Denmark",
+"NordBridge Denmark | Tender Support, Contractor Sourcing & Procurement":"NordBridge Denmark | دعم المناقصات والبحث عن المقاولين والمشتريات"
+}};
+for(const l of ["uk","da","ar"])Object.assign(translations[l],auditedHeadTitles[l]);
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
