@@ -457,6 +457,51 @@ ar:{
 "NordBridge Denmark | Tender Support, Contractor Sourcing & Procurement":"NordBridge Denmark | دعم المناقصات والبحث عن المقاولين والمشتريات"
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],auditedHeadTitles[l]);
+
+const auditedBodyGapsA={
+uk:{
+"The exact sequence may vary by opportunity, but the core principle remains the same: assess the fit, document the commercial framework and move toward direct contracting.":"Точна послідовність може відрізнятися залежно від можливості, але основний принцип незмінний: оцінити відповідність, зафіксувати комерційні умови та перейти до прямого контракту.",
+"NordBridge does not claim to represent a contracting authority unless expressly authorized, does not guarantee awards and does not seek to bypass procurement rules.":"NordBridge не заявляє, що представляє замовника без прямого уповноваження, не гарантує перемогу та не намагається обходити правила закупівель.",
+"Commercial protection is designed to preserve the value of an introduction while allowing the principal parties to perform their own legal, financial, technical and commercial due diligence.":"Комерційний захист покликаний зберегти цінність представлення сторін, водночас залишаючи основним сторонам власну юридичну, фінансову, технічну та комерційну перевірку.",
+"Written fee and payment triggers where applicable.":"Письмово визначені комісії та умови їх оплати, де це застосовно.",
+"Confidentiality and non-circumvention where appropriate.":"Конфіденційність і захист від обходу посередника, де це доречно.",
+"Document review before submission where agreed.":"Перевірка документів перед поданням, якщо це погоджено.",
+"Direct contracts remain between the principal parties.":"Прямі контракти залишаються між основними сторонами.",
+"Best for formal proposals, agreement drafts, tender documents and auditable commercial communication.":"Найкраще підходить для офіційних пропозицій, проєктів договорів, тендерних документів і комерційного листування, яке потрібно зберігати.",
+"Useful for quick operational follow-up, clarifications and keeping active counterparties moving.":"Зручно для швидкого оперативного супроводу, уточнень і підтримання активної комунікації з контрагентами.",
+"Used to define the commercial structure, success fee, confidentiality and protection against circumvention.":"Використовується для визначення комерційної структури, success fee, конфіденційності та захисту від обходу.",
+"Send your capability statement or commercial requirement and NordBridge will review the next logical step.":"Надішліть опис можливостей компанії або комерційну потребу, і NordBridge визначить наступний логічний крок.",
+"Website information is general. Specific services, confidentiality, fees, payment triggers and transaction protections are governed by the written agreement applicable to the specific business relationship.":"Інформація на сайті має загальний характер. Конкретні послуги, конфіденційність, комісії, умови оплати та захист угоди визначаються письмовою угодою для відповідних ділових відносин."
+},
+da:{
+"The exact sequence may vary by opportunity, but the core principle remains the same: assess the fit, document the commercial framework and move toward direct contracting.":"Den præcise rækkefølge kan variere, men princippet er det samme: vurder matchet, dokumentér den kommercielle ramme og gå videre mod direkte kontrakt.",
+"NordBridge does not claim to represent a contracting authority unless expressly authorized, does not guarantee awards and does not seek to bypass procurement rules.":"NordBridge hævder ikke at repræsentere en ordregiver uden udtrykkelig bemyndigelse, garanterer ikke tildelinger og søger ikke at omgå udbudsregler.",
+"Commercial protection is designed to preserve the value of an introduction while allowing the principal parties to perform their own legal, financial, technical and commercial due diligence.":"Kommerciel beskyttelse skal bevare værdien af en introduktion, mens hovedparterne fortsat udfører deres egen juridiske, finansielle, tekniske og kommercielle due diligence.",
+"Written fee and payment triggers where applicable.":"Skriftlige honorarer og betalingsudløsere, hvor relevant.",
+"Confidentiality and non-circumvention where appropriate.":"Fortrolighed og beskyttelse mod omgåelse, hvor relevant.",
+"Document review before submission where agreed.":"Dokumentgennemgang før indsendelse, når det er aftalt.",
+"Direct contracts remain between the principal parties.":"Direkte kontrakter forbliver mellem hovedparterne.",
+"Best for formal proposals, agreement drafts, tender documents and auditable commercial communication.":"Bedst til formelle tilbud, aftaleudkast, udbudsdokumenter og dokumenterbar kommerciel kommunikation.",
+"Useful for quick operational follow-up, clarifications and keeping active counterparties moving.":"Velegnet til hurtig operationel opfølgning, afklaringer og fremdrift med aktive modparter.",
+"Used to define the commercial structure, success fee, confidentiality and protection against circumvention.":"Bruges til at definere den kommercielle struktur, resultathonorar, fortrolighed og beskyttelse mod omgåelse.",
+"Send your capability statement or commercial requirement and NordBridge will review the next logical step.":"Send jeres kompetenceprofil eller kommercielle behov, så vurderer NordBridge det næste logiske skridt.",
+"Website information is general. Specific services, confidentiality, fees, payment triggers and transaction protections are governed by the written agreement applicable to the specific business relationship.":"Oplysninger på hjemmesiden er generelle. Konkrete tjenester, fortrolighed, honorarer, betalingsbetingelser og transaktionsbeskyttelse reguleres af den skriftlige aftale for det konkrete forretningsforhold."
+},
+ar:{
+"The exact sequence may vary by opportunity, but the core principle remains the same: assess the fit, document the commercial framework and move toward direct contracting.":"قد يختلف التسلسل الدقيق حسب الفرصة، لكن المبدأ الأساسي يبقى واحداً: تقييم الملاءمة وتوثيق الإطار التجاري والتقدم نحو التعاقد المباشر.",
+"NordBridge does not claim to represent a contracting authority unless expressly authorized, does not guarantee awards and does not seek to bypass procurement rules.":"لا تدّعي NordBridge تمثيل جهة متعاقدة ما لم تكن مخولة بذلك صراحة، ولا تضمن الفوز بالعقود ولا تسعى إلى تجاوز قواعد المشتريات.",
+"Commercial protection is designed to preserve the value of an introduction while allowing the principal parties to perform their own legal, financial, technical and commercial due diligence.":"تهدف الحماية التجارية إلى الحفاظ على قيمة التعريف بين الأطراف مع تمكين الأطراف الرئيسية من إجراء العناية الواجبة القانونية والمالية والفنية والتجارية الخاصة بها.",
+"Written fee and payment triggers where applicable.":"توثيق الرسوم وشروط استحقاق الدفع كتابياً عند الاقتضاء.",
+"Confidentiality and non-circumvention where appropriate.":"السرية والحماية من التجاوز عند الاقتضاء.",
+"Document review before submission where agreed.":"مراجعة المستندات قبل التقديم عند الاتفاق على ذلك.",
+"Direct contracts remain between the principal parties.":"تبقى العقود المباشرة بين الأطراف الرئيسية.",
+"Best for formal proposals, agreement drafts, tender documents and auditable commercial communication.":"الأفضل للعروض الرسمية ومسودات الاتفاقيات ووثائق المناقصات والمراسلات التجارية القابلة للتوثيق.",
+"Useful for quick operational follow-up, clarifications and keeping active counterparties moving.":"مفيد للمتابعة التشغيلية السريعة والتوضيحات والحفاظ على تقدم التواصل مع الأطراف النشطة.",
+"Used to define the commercial structure, success fee, confidentiality and protection against circumvention.":"يستخدم لتحديد الهيكل التجاري ورسوم النجاح والسرية والحماية من التجاوز.",
+"Send your capability statement or commercial requirement and NordBridge will review the next logical step.":"أرسل بيان قدرات شركتك أو متطلباتك التجارية وستراجع NordBridge الخطوة المنطقية التالية.",
+"Website information is general. Specific services, confidentiality, fees, payment triggers and transaction protections are governed by the written agreement applicable to the specific business relationship.":"معلومات الموقع عامة. تخضع الخدمات المحددة والسرية والرسوم وشروط الدفع وحماية المعاملات للاتفاقية المكتوبة المطبقة على علاقة العمل المحددة."
+}};
+for(const l of ["uk","da","ar"])Object.assign(translations[l],auditedBodyGapsA[l]);
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
