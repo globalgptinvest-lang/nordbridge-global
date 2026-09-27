@@ -430,4 +430,21 @@ function init(){
   setLang(["en","uk","da","ar"].includes(qp)?qp:(localStorage.getItem("nordbridge-lang")||"en"),false);
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+
+/* Final localization hardening: translate document head using the same exact-string dictionaries. */
+function translateHead(lang){
+  if(lang==="en" || !translations[lang]) return;
+  const dict=translations[lang];
+  const title=(document.title||"").trim();
+  if(dict[title]) document.title=dict[title];
+  ["description","og:title","og:description","twitter:title","twitter:description"].forEach(name=>{
+    const sel=name==="description"?'meta[name="description"]':
+      (name.startsWith("og:")?'meta[property="'+name+'"]':'meta[name="'+name+'"]');
+    const el=document.querySelector(sel);
+    if(el){
+      const value=(el.getAttribute("content")||"").trim();
+      if(dict[value]) el.setAttribute("content",dict[value]);
+    }
+  });
+}
 })();
