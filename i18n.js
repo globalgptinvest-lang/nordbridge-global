@@ -388,6 +388,36 @@ function localizeHeadFallback(lang){
  const desc=document.querySelector('meta[name="description"]');
  if(desc){const v=(desc.content||"").trim();if(d[v])desc.content=d[v];}
 }
+
+const finalLongGaps={
+uk:{
+"NordBridge can begin from your company profile, products, services or geographic ambitions and look for relevant business opportunities and counterparties in international markets.":"NordBridge може почати з профілю вашої компанії, продуктів, послуг або географічних цілей і шукати відповідні бізнес-можливості та контрагентів на міжнародних ринках.",
+"The focus is practical: who may need the capability, what opportunity exists, and what next commercial step can move the discussion forward.":"Підхід практичний: кому можуть бути потрібні ваші можливості, яка можливість існує та який наступний комерційний крок може просунути переговори.",
+"NordBridge evaluates opportunities in Europe, the Middle East, Africa, Asia and other markets, with sector focus including energy, industrial equipment, IT infrastructure, engineering, logistics and procurement.":"NordBridge оцінює можливості в Європі, на Близькому Сході, в Африці, Азії та інших ринках, зокрема в енергетиці, промисловому обладнанні, ІТ-інфраструктурі, інжинірингу, логістиці та закупівлях.",
+"Provide capabilities, geographic coverage, licenses, products, services and relevant references. We use that information to look for suitable tender and commercial opportunities.":"Надайте інформацію про можливості, географію роботи, ліцензії, товари, послуги та відповідний досвід. Ми використовуємо ці дані для пошуку відповідних тендерних і комерційних можливостей.",
+"Tell us what product, service, contractor or specialist capability you need. We can source and introduce companies that appear relevant to the requirement.":"Повідомте, який товар, послуга, підрядник або спеціалізована компетенція вам потрібні. Ми можемо знайти та представити компанії, які відповідають вимогам.",
+"For selected opportunities, NordBridge may first share a non-identifying summary. Buyer names, tender references, links or documents can be disclosed later after appropriate written commercial protections are in place.":"Для окремих можливостей NordBridge спочатку може надати опис без ідентифікуючих даних. Назви покупців, номери тендерів, посилання або документи можуть бути розкриті пізніше після письмового оформлення належного комерційного захисту.",
+"Support the process while final contracts remain between the principal parties.":"Підтримувати процес, залишаючи остаточні контракти між основними сторонами."
+},
+da:{
+"NordBridge can begin from your company profile, products, services or geographic ambitions and look for relevant business opportunities and counterparties in international markets.":"NordBridge kan tage udgangspunkt i din virksomhedsprofil, produkter, tjenester eller geografiske mål og søge efter relevante forretningsmuligheder og modparter på internationale markeder.",
+"The focus is practical: who may need the capability, what opportunity exists, and what next commercial step can move the discussion forward.":"Fokus er praktisk: hvem kan have brug for kompetencen, hvilken mulighed findes, og hvilket næste kommercielle skridt kan bringe dialogen videre.",
+"NordBridge evaluates opportunities in Europe, the Middle East, Africa, Asia and other markets, with sector focus including energy, industrial equipment, IT infrastructure, engineering, logistics and procurement.":"NordBridge vurderer muligheder i Europa, Mellemøsten, Afrika, Asien og andre markeder med fokus på blandt andet energi, industrielt udstyr, IT-infrastruktur, engineering, logistik og indkøb.",
+"Provide capabilities, geographic coverage, licenses, products, services and relevant references. We use that information to look for suitable tender and commercial opportunities.":"Oplys kompetencer, geografisk dækning, licenser, produkter, tjenester og relevante referencer. Vi bruger oplysningerne til at finde passende udbuds- og kommercielle muligheder.",
+"Tell us what product, service, contractor or specialist capability you need. We can source and introduce companies that appear relevant to the requirement.":"Fortæl os, hvilket produkt, hvilken tjeneste, entreprenør eller specialistkompetence du har brug for. Vi kan finde og introducere virksomheder, der ser relevante ud for behovet.",
+"For selected opportunities, NordBridge may first share a non-identifying summary. Buyer names, tender references, links or documents can be disclosed later after appropriate written commercial protections are in place.":"For udvalgte muligheder kan NordBridge først dele et ikke-identificerende resumé. Købernavne, udbudsreferencer, links eller dokumenter kan senere videregives, når passende skriftlig kommerciel beskyttelse er på plads.",
+"Support the process while final contracts remain between the principal parties.":"Understøt processen, mens de endelige kontrakter forbliver mellem hovedparterne."
+},
+ar:{
+"NordBridge can begin from your company profile, products, services or geographic ambitions and look for relevant business opportunities and counterparties in international markets.":"يمكن لـ NordBridge البدء من ملف شركتك أو منتجاتك أو خدماتك أو أهدافك الجغرافية والبحث عن فرص أعمال وأطراف تجارية مناسبة في الأسواق الدولية.",
+"The focus is practical: who may need the capability, what opportunity exists, and what next commercial step can move the discussion forward.":"التركيز عملي: من قد يحتاج إلى هذه القدرة، وما الفرصة المتاحة، وما الخطوة التجارية التالية التي يمكن أن تدفع الحوار إلى الأمام.",
+"NordBridge evaluates opportunities in Europe, the Middle East, Africa, Asia and other markets, with sector focus including energy, industrial equipment, IT infrastructure, engineering, logistics and procurement.":"تقيّم NordBridge الفرص في أوروبا والشرق الأوسط وأفريقيا وآسيا وأسواق أخرى، مع التركيز على قطاعات تشمل الطاقة والمعدات الصناعية والبنية التحتية لتقنية المعلومات والهندسة والخدمات اللوجستية والمشتريات.",
+"Provide capabilities, geographic coverage, licenses, products, services and relevant references. We use that information to look for suitable tender and commercial opportunities.":"قدّم القدرات والتغطية الجغرافية والتراخيص والمنتجات والخدمات والمراجع ذات الصلة. نستخدم هذه المعلومات للبحث عن فرص مناقصات وفرص تجارية مناسبة.",
+"Tell us what product, service, contractor or specialist capability you need. We can source and introduce companies that appear relevant to the requirement.":"أخبرنا بالمنتج أو الخدمة أو المقاول أو القدرة المتخصصة التي تحتاجها. يمكننا البحث عن شركات تبدو مناسبة للمتطلبات وتعريفك بها.",
+"For selected opportunities, NordBridge may first share a non-identifying summary. Buyer names, tender references, links or documents can be disclosed later after appropriate written commercial protections are in place.":"بالنسبة لبعض الفرص، قد تشارك NordBridge أولاً ملخصاً دون بيانات تعريفية. ويمكن الكشف لاحقاً عن أسماء المشترين أو مراجع المناقصات أو الروابط أو المستندات بعد وضع الحماية التجارية المكتوبة المناسبة.",
+"Support the process while final contracts remain between the principal parties.":"دعم العملية مع بقاء العقود النهائية بين الأطراف الرئيسية."
+}};
+for(const l of ["uk","da","ar"])Object.assign(translations[l],finalLongGaps[l]);
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
