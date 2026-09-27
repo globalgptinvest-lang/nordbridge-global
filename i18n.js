@@ -239,6 +239,43 @@ ar:{
 "Page Not Found | NordBridge":"الصفحة غير موجودة | NordBridge","The page may have moved or the address may be incorrect.":"ربما تم نقل الصفحة أو أن العنوان غير صحيح."
 }};
 for(const l of ["uk","da","ar"])Object.assign(translations[l],finalAuditTranslations[l]);
+
+const siteWideFinal={
+uk:{
+"NordBridge Denmark · CVR 46768736 · Global procurement support":"NordBridge Данія · CVR 46768736 · Глобальний супровід закупівель",
+"Find Tenders. Prepare Your Bid.":"Знаходьте тендери. Готуйте заявку.",
+"Find Contractors & Suppliers.":"Знаходьте підрядників і постачальників.",
+"Find Tenders for My Company →":"Знайти тендери для моєї компанії →","Prepare My Tender":"Підготувати мій тендер",
+"International B2B partner introductions for contractors, suppliers and buyers.":"Міжнародні B2B-знайомства для підрядників, постачальників і покупців.",
+"We identify relevant tender and procurement opportunities.":"Ми знаходимо релевантні тендерні та закупівельні можливості.",
+"We connect project requirements with suitable commercial capability.":"Ми поєднуємо вимоги проєктів із відповідними комерційними можливостями.",
+"We support structured communication through the pre-contract stage.":"Ми підтримуємо структуровану комунікацію на передконтрактному етапі.",
+"B2B Partner Introductions":"B2B-знайомства з партнерами","Matching":"Підбір","Institutional Procurement":"Інституційні закупівлі","UN Tender Support":"Супровід тендерів ООН",
+"A clear role in international B2B transactions.":"Чітка роль у міжнародних B2B-угодах.","Commercial safeguards":"Комерційні гарантії","Clear roles and written terms":"Чіткі ролі та письмові умови","Registered in Denmark":"Зареєстровано в Данії","Protected introductions":"Захищені бізнес-знайомства","Transparent fees":"Прозора оплата","Direct contracting":"Пряме укладення контрактів","Looking for a tender, supplier, contractor or business partner?":"Шукаєте тендер, постачальника, підрядника або бізнес-партнера?","Choose the route that fits your company.":"Оберіть варіант, який відповідає вашій компанії.","Send Us Your Tender":"Надішліть нам ваш тендер","Buyers":"Покупці"
+},
+da:{
+"NordBridge Denmark · CVR 46768736 · Global procurement support":"NordBridge Danmark · CVR 46768736 · Global indkøbssupport",
+"Find Tenders. Prepare Your Bid.":"Find udbud. Forbered dit tilbud.","Find Contractors & Suppliers.":"Find entreprenører og leverandører.",
+"Find Tenders for My Company →":"Find udbud til min virksomhed →","Prepare My Tender":"Forbered mit tilbud",
+"International B2B partner introductions for contractors, suppliers and buyers.":"Internationale B2B-partnerintroduktioner for entreprenører, leverandører og købere.",
+"We identify relevant tender and procurement opportunities.":"Vi identificerer relevante udbuds- og indkøbsmuligheder.",
+"We connect project requirements with suitable commercial capability.":"Vi forbinder projektkrav med relevante kommercielle kompetencer.",
+"We support structured communication through the pre-contract stage.":"Vi understøtter struktureret kommunikation frem til kontraktfasen.",
+"B2B Partner Introductions":"B2B-partnerintroduktioner","Matching":"Matchning","Institutional Procurement":"Institutionelle indkøb","UN Tender Support":"FN-udbudssupport",
+"A clear role in international B2B transactions.":"En klar rolle i internationale B2B-transaktioner.","Commercial safeguards":"Kommerciel beskyttelse","Clear roles and written terms":"Klare roller og skriftlige vilkår","Registered in Denmark":"Registreret i Danmark","Protected introductions":"Beskyttede introduktioner","Transparent fees":"Gennemsigtige honorarer","Direct contracting":"Direkte kontraktindgåelse","Looking for a tender, supplier, contractor or business partner?":"Leder du efter et udbud, en leverandør, entreprenør eller forretningspartner?","Choose the route that fits your company.":"Vælg den vej, der passer til din virksomhed.","Send Us Your Tender":"Send os dit udbud","Buyers":"Købere"
+},
+ar:{
+"NordBridge Denmark · CVR 46768736 · Global procurement support":"NordBridge الدنمارك · CVR 46768736 · دعم المشتريات العالمي",
+"Find Tenders. Prepare Your Bid.":"اعثر على المناقصات. جهّز عرضك.","Find Contractors & Suppliers.":"اعثر على المقاولين والموردين.",
+"Find Tenders for My Company →":"ابحث عن مناقصات لشركتي ←","Prepare My Tender":"جهّز مناقصتي",
+"International B2B partner introductions for contractors, suppliers and buyers.":"تعريف شركاء أعمال دوليين للمقاولين والموردين والمشترين.",
+"We identify relevant tender and procurement opportunities.":"نحدد فرص المناقصات والمشتريات ذات الصلة.",
+"We connect project requirements with suitable commercial capability.":"نربط متطلبات المشاريع بالقدرات التجارية المناسبة.",
+"We support structured communication through the pre-contract stage.":"ندعم التواصل المنظم خلال مرحلة ما قبل التعاقد.",
+"B2B Partner Introductions":"التعريف بشركاء B2B","Matching":"المطابقة","Institutional Procurement":"المشتريات المؤسسية","UN Tender Support":"دعم مناقصات الأمم المتحدة",
+"A clear role in international B2B transactions.":"دور واضح في معاملات B2B الدولية.","Commercial safeguards":"الحماية التجارية","Clear roles and written terms":"أدوار واضحة وشروط مكتوبة","Registered in Denmark":"مسجل في الدنمارك","Protected introductions":"تعريفات تجارية محمية","Transparent fees":"رسوم شفافة","Direct contracting":"التعاقد المباشر","Looking for a tender, supplier, contractor or business partner?":"هل تبحث عن مناقصة أو مورد أو مقاول أو شريك أعمال؟","Choose the route that fits your company.":"اختر المسار المناسب لشركتك.","Send Us Your Tender":"أرسل مناقصتك","Buyers":"المشترون"
+}};
+for(const l of ["uk","da","ar"])Object.assign(translations[l],siteWideFinal[l]);
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
