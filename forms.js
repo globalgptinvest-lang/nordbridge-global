@@ -29,16 +29,31 @@ document.querySelectorAll('.lead-form').forEach(form=>{
     form.insertBefore(consent,btn);
   }
 
-  form.addEventListener('submit',()=>{
-    if(!form.reportValidity()) return;
+  form.addEventListener('submit',e=>{
+    if(!form.reportValidity()){e.preventDefault();return;}
+    if(form.dataset.submitting==='true'){e.preventDefault();return;}
+    form.dataset.submitting='true';
     const email=form.querySelector('input[type="email"]');
     if(email&&email.value) addHidden('_replyto',email.value);
     addHidden('_url',location.href);
     const btn=form.querySelector('button[type="submit"]');
     if(btn){
+      if(!btn.dataset.originalText) btn.dataset.originalText=btn.textContent;
       const lang=document.documentElement.lang||'en';
       const sending={en:'Sending…',uk:'Надсилання…',da:'Sender…',ar:'جارٍ الإرسال…'}[lang]||'Sending…';
-      btn.disabled=true;btn.textContent=sending;
+      btn.disabled=true;btn.setAttribute('aria-disabled','true');btn.textContent=sending;
     }
+    const status=document.createElement('div');
+    status.className='form-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    status.textContent=({en:'Submitting your enquiry…',uk:'Надсилаємо вашу заявку…',da:'Sender din forespørgsel…',ar:'جارٍ إرسال طلبك…'}[document.documentElement.lang||'en']||'Submitting your enquiry…');
+    form.appendChild(status);
+    window.setTimeout(()=>{
+      if(document.visibilityState==='visible'&&form.dataset.submitting==='true'){
+        form.dataset.submitting='false';
+        if(btn){btn.disabled=false;btn.removeAttribute('aria-disabled');btn.textContent=btn.dataset.originalText||'Submit';}
+        status.className='form-status error';
+        status.textContent='The page did not confirm submission. Please try again or contact NordBridge directly.';
+      }
+    },12000);
   });
 });
