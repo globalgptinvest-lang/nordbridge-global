@@ -30,3 +30,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .form-header-links{display:flex;gap:20px;font-size:14px;font-weight:700;color:#17344f}
 .form-header-links a:hover{color:#0b5f99}
 @media(max-width:540px){.form-header-inner{min-height:64px}.form-brand img{width:54px;height:38px}.form-brand strong{font-size:17px}.form-header-links{gap:12px;font-size:12px}section{padding:52px 0}.lead-form input,.lead-form textarea,.lead-form select{font-size:16px}.floating-wa{right:14px;bottom:14px;padding:12px 15px}}
+
+.form-next{max-width:1080px;margin:64px auto 0;padding-top:48px;border-top:1px solid #e1e9f0}
+.form-next .section-head{margin-bottom:28px}
+.form-next .section-head h2{font-size:clamp(28px,3vw,40px)}
+@media(max-width:540px){.form-next{margin-top:46px;padding-top:38px}}
