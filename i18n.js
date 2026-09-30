@@ -24,11 +24,31 @@ Object.assign(translations.da,{
 "Choose support package":"Vælg supportpakke","Select a package":"Vælg en pakke","Custom scope / Other support":"Individuelt omfang / Anden support","100% advance payment":"100% forudbetaling",
 "Fee & scope confirmation":"Bekræftelse af pris og omfang","Payment & tender support":"Betaling og udbudssupport"
 });
+Object.assign(translations.da,{
+"Already have an RFQ, RFP, ITB, EOI or other procurement opportunity? Choose a defined review package and move to full support only when needed. Fixed-scope professional services are paid 100% in advance before substantive work begins.":"Har I allerede en RFQ, RFP, ITB, EOI eller anden udbudsmulighed? Vælg en afgrænset gennemgangspakke og gå kun videre til fuld support, når det er nødvendigt. Ydelser med fast omfang betales 100% forud, før det faglige arbejde påbegyndes.",
+"Eligibility, key requirements, deadline, major compliance risks and a high-level document-gap overview.":"Gennemgang af kvalifikation, nøglekrav, frist, væsentlige compliance-risici og manglende dokumenter på overordnet niveau.",
+"Detailed requirements matrix, eligibility/compliance check, document gaps and submission-risk review.":"Detaljeret kravmatrix, kvalifikations- og compliancekontrol, manglende dokumenter og gennemgang af risici ved indsendelse.",
+"Full tender-document review, compliance control, gap management, proposal review and final pre-submission check.":"Fuld gennemgang af udbudsdokumenter, compliancekontrol, håndtering af mangler, tilbudsgennemgang og endelig kontrol før indsendelse.",
+"Choose a fixed-scope package or request a custom scope. Fixed-scope professional services are paid 100% in advance before substantive work begins. Award is never guaranteed.":"Vælg en pakke med fast omfang eller anmod om et individuelt omfang. Ydelser med fast omfang betales 100% forud, før det faglige arbejde påbegyndes. Tildeling af kontrakt garanteres ikke.",
+"Work starts after the agreed fixed fee is received in cleared funds. Custom scopes are quoted in writing before payment.":"Arbejdet starter, når det aftalte faste honorar er modtaget som disponible midler. Individuelle opgaver prissættes skriftligt før betaling.",
+"The selected package or custom professional scope and fee are confirmed in writing. Fixed-scope work requires 100% advance payment.":"Den valgte pakke eller det individuelle faglige omfang og honorar bekræftes skriftligt. Arbejde med fast omfang kræver 100% forudbetaling.",
+"After cleared payment, work proceeds within the agreed scope.":"Efter modtaget betaling udføres arbejdet inden for det aftalte omfang."
+});
 Object.assign(translations.ar,{
 "Fixed-fee tender support":"دعم المناقصات برسوم ثابتة","Start your tender review from €250":"ابدأ مراجعة المناقصة من €250",
 "Tender Go / No-Go Review":"مراجعة قرار التقدم أو عدم التقدم","Compliance & Submission Review":"مراجعة الامتثال والتقديم","Full Tender Support":"دعم كامل للمناقصة","Start Tender Review":"ابدأ مراجعة المناقصة","Compare Services":"قارن الخدمات",
 "Choose support package":"اختر باقة الدعم","Select a package":"اختر باقة","Custom scope / Other support":"نطاق مخصص / دعم آخر","100% advance payment":"دفع مقدم 100%",
 "Fee & scope confirmation":"تأكيد الرسوم والنطاق","Payment & tender support":"الدفع ودعم المناقصة"
+});
+Object.assign(translations.ar,{
+"Already have an RFQ, RFP, ITB, EOI or other procurement opportunity? Choose a defined review package and move to full support only when needed. Fixed-scope professional services are paid 100% in advance before substantive work begins.":"هل لديكم بالفعل طلب عرض أسعار أو طلب تقديم عروض أو دعوة للعطاء أو إبداء اهتمام أو فرصة شراء أخرى؟ اختاروا باقة مراجعة محددة وانتقلوا إلى الدعم الكامل فقط عند الحاجة. تُدفع رسوم الخدمات المهنية ذات النطاق المحدد مقدماً بنسبة 100% قبل بدء العمل الفعلي.",
+"Eligibility, key requirements, deadline, major compliance risks and a high-level document-gap overview.":"مراجعة الأهلية والمتطلبات الرئيسية والموعد النهائي ومخاطر الامتثال الأساسية ونظرة عامة على المستندات الناقصة.",
+"Detailed requirements matrix, eligibility/compliance check, document gaps and submission-risk review.":"مصفوفة متطلبات تفصيلية، وفحص الأهلية والامتثال، وتحديد المستندات الناقصة ومخاطر التقديم.",
+"Full tender-document review, compliance control, gap management, proposal review and final pre-submission check.":"مراجعة كاملة لوثائق المناقصة، ومراقبة الامتثال، ومعالجة النواقص، ومراجعة العرض، والفحص النهائي قبل التقديم.",
+"Choose a fixed-scope package or request a custom scope. Fixed-scope professional services are paid 100% in advance before substantive work begins. Award is never guaranteed.":"اختاروا باقة ذات نطاق محدد أو اطلبوا نطاقاً مخصصاً. تُدفع رسوم الخدمات ذات النطاق المحدد مقدماً بنسبة 100% قبل بدء العمل الفعلي. لا يوجد ضمان للفوز بالعطاء.",
+"Work starts after the agreed fixed fee is received in cleared funds. Custom scopes are quoted in writing before payment.":"يبدأ العمل بعد استلام الرسوم الثابتة المتفق عليها كأموال متاحة. يتم تحديد سعر النطاق المخصص كتابياً قبل الدفع.",
+"The selected package or custom professional scope and fee are confirmed in writing. Fixed-scope work requires 100% advance payment.":"يتم تأكيد الباقة المختارة أو النطاق المهني المخصص والرسوم كتابياً. يتطلب العمل ذو النطاق المحدد دفعاً مقدماً بنسبة 100%.",
+"After cleared payment, work proceeds within the agreed scope.":"بعد استلام الدفع، يبدأ العمل ضمن النطاق المتفق عليه."
 });
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
