@@ -2,6 +2,21 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   form.action='https://formsubmit.co/b725f79abde568a9761c73d482dca435';
   form.method='POST';
 
+  // Preselect a tender-support package when the visitor arrives from a pricing card.
+  const packageSelect=form.querySelector('select[name="Selected support package"]');
+  if(packageSelect){
+    const requested=new URLSearchParams(location.search).get('package');
+    const packageMap={
+      '250':'€250 — Tender Go / No-Go Review',
+      '750':'€750 — Compliance & Submission Review',
+      '1250':'From €1,250 — Full Tender Support',
+      'custom':'Custom scope / Other support'
+    };
+    if(requested&&packageMap[requested]&&[...packageSelect.options].some(o=>o.textContent.trim()===packageMap[requested])){
+      packageSelect.value=packageMap[requested];
+    }
+  }
+
   const addHidden=(name,value)=>{
     let input=form.querySelector('input[name="'+name+'"]');
     if(!input){input=document.createElement('input');input.type='hidden';input.name=name;form.appendChild(input);}
