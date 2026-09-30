@@ -82,6 +82,7 @@ function setLang(lang,updateUrl=true){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
   walk(document.body,lang);
+  translateHead(lang);
   localStorage.setItem("nordbridge-lang",lang);
   document.querySelectorAll("[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
   if(updateUrl){
@@ -105,19 +106,34 @@ function init(){
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
 
 /* Final localization hardening: translate document head using the same exact-string dictionaries. */
+const originalHead={
+  title:document.title,
+  meta:{}
+};
+["description","og:title","og:description","twitter:title","twitter:description"].forEach(name=>{
+  const sel=name==="description"?'meta[name="description"]':
+    (name.startsWith("og:")?'meta[property="'+name+'"]':'meta[name="'+name+'"]');
+  const el=document.querySelector(sel);
+  if(el) originalHead.meta[name]=el.getAttribute("content")||"";
+});
 function translateHead(lang){
-  if(lang==="en" || !translations[lang]) return;
-  const dict=translations[lang];
-  const title=(document.title||"").trim();
-  if(dict[title]) document.title=dict[title];
-  ["description","og:title","og:description","twitter:title","twitter:description"].forEach(name=>{
+  document.title=originalHead.title;
+  Object.keys(originalHead.meta).forEach(name=>{
     const sel=name==="description"?'meta[name="description"]':
       (name.startsWith("og:")?'meta[property="'+name+'"]':'meta[name="'+name+'"]');
     const el=document.querySelector(sel);
-    if(el){
-      const value=(el.getAttribute("content")||"").trim();
-      if(dict[value]) el.setAttribute("content",dict[value]);
-    }
+    if(el) el.setAttribute("content",originalHead.meta[name]);
+  });
+  if(lang==="en" || !translations[lang]) return;
+  const dict=translations[lang];
+  const title=(originalHead.title||"").trim();
+  if(dict[title]) document.title=dict[title];
+  Object.keys(originalHead.meta).forEach(name=>{
+    const sel=name==="description"?'meta[name="description"]':
+      (name.startsWith("og:")?'meta[property="'+name+'"]':'meta[name="'+name+'"]');
+    const el=document.querySelector(sel);
+    const value=(originalHead.meta[name]||"").trim();
+    if(el&&dict[value]) el.setAttribute("content",dict[value]);
   });
 }
 })();
