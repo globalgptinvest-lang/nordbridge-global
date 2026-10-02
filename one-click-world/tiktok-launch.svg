@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1014"/><stop offset="1" stop-color="#123d43"/></linearGradient></defs>
+<rect width="1080" height="1920" fill="url(#g)"/>
+<circle cx="840" cy="250" r="280" fill="#55cce9" opacity=".10"/>
+<circle cx="210" cy="1600" r="330" fill="#62e2ad" opacity=".10"/>
+<text x="540" y="270" text-anchor="middle" fill="#62e2ad" font-family="Arial,sans-serif" font-size="48" font-weight="700" letter-spacing="8">GLOBAL CHALLENGE</text>
+<text x="540" y="650" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="124" font-weight="900">195 COUNTRIES.</text>
+<text x="540" y="815" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="124" font-weight="900">ONE NIGHT.</text>
+<text x="540" y="980" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="124" font-weight="900">ONE CLICK.</text>
+<text x="540" y="1175" text-anchor="middle" fill="#a8b3bd" font-family="Arial,sans-serif" font-size="58">Represent your country.</text>
+<rect x="180" y="1320" width="720" height="150" rx="75" fill="#62e2ad"/>
+<text x="540" y="1415" text-anchor="middle" fill="#07110e" font-family="Arial,sans-serif" font-size="60" font-weight="900">ADD YOUR CLICK</text>
+<text x="540" y="1650" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="52">one-click-world</text>
+<text x="540" y="1735" text-anchor="middle" fill="#a8b3bd" font-family="Arial,sans-serif" font-size="38">Free · No account · No payment</text>
+</svg>
