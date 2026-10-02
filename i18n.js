@@ -97,6 +97,7 @@ function setLang(lang,updateUrl=true){
   translateHead(lang);
   localStorage.setItem("nordbridge-lang",lang);
   document.querySelectorAll("[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
+  window.dispatchEvent(new CustomEvent("nordbridge:languagechange",{detail:{lang}}));
   if(updateUrl){
     const u=new URL(location.href);
     if(lang==="en") u.searchParams.delete("lang"); else u.searchParams.set("lang",lang);
