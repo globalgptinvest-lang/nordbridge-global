@@ -5,7 +5,7 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   // Preselect a tender-support package when the visitor arrives from a pricing card.
   const packageSelect=form.querySelector('select[name="Selected support package"]');
   if(packageSelect){
-    const requested=new URLSearchParams(location.search).get('package');
+    const params=new URLSearchParams(location.search);\n    const requested=params.get('package');
     const packageMap={
       '250':'€250 — Tender Go / No-Go Review',
       '750':'€750 — Compliance & Submission Review',
@@ -17,14 +17,14 @@ document.querySelectorAll('.lead-form').forEach(form=>{
     }
   }
 
-  const addHidden=(name,value)=>{
+  const estimateParams=new URLSearchParams(location.search);\n  const estimate=estimateParams.get('estimate');\n  const services=estimateParams.get('services');\n  const priority=estimateParams.get('priority');\n\n  const addHidden=(name,value)=>{
     let input=form.querySelector('input[name="'+name+'"]');
     if(!input){input=document.createElement('input');input.type='hidden';input.name=name;form.appendChild(input);}
     input.value=value;
     return input;
   };
 
-  addHidden('_subject',form.dataset.mailSubject||'NordBridge website enquiry');
+  addHidden('_subject',form.dataset.mailSubject||'NordBridge website enquiry');\n  if(estimate) addHidden('Calculator estimate',estimate);\n  if(services) addHidden('Calculator services',services);\n  if(priority) addHidden('Calculator priority',priority);
   addHidden('_template','table');
   addHidden('_captcha','false');
   addHidden('_next','https://nordbridge-global.com/thanks.html');
