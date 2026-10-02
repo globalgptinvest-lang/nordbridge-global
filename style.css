@@ -51,3 +51,5 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .calc-summary .btn{width:100%;margin-top:10px}.calc-reset{cursor:pointer}.calc-note{display:block;color:#718195;line-height:1.5;margin-top:16px}
 @media(max-width:900px){.calculator{grid-template-columns:1fr}.calc-summary{position:static}.calc-services{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.calc-services{grid-template-columns:1fr}.calc-item{grid-template-columns:auto 1fr}.calc-item b{grid-column:2}.calc-total{font-size:42px}}
+
+.calc-toolbar{display:grid;gap:14px;margin:0 0 24px}.calc-toolbar input{width:100%;padding:14px 16px;border:1px solid #cfdce7;border-radius:9px;font:inherit}.calc-filters{display:flex;gap:8px;flex-wrap:wrap}.calc-filter{border:1px solid #cfdce7;background:#fff;color:#17344f;padding:9px 12px;border-radius:999px;font-weight:800;font-size:12px;cursor:pointer}.calc-filter.active{background:#073e70;color:#fff;border-color:#073e70}.calc-item[hidden]{display:none!important}@media(max-width:540px){.calc-filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.calc-filter{white-space:nowrap}}
