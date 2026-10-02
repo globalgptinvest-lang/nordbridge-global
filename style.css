@@ -35,3 +35,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .form-next .section-head{margin-bottom:28px}
 .form-next .section-head h2{font-size:clamp(28px,3vw,40px)}
 @media(max-width:540px){.form-next{margin-top:46px;padding-top:38px}}
+
+/* NordBridge service calculator */
+.calculator{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.75fr);gap:28px;align-items:start}
+.calc-services{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.calc-item{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;border:1px solid #dfe7ee;border-radius:10px;padding:18px;background:#fff;cursor:pointer;transition:.2s}
+.calc-item:hover,.calc-item:has(input:checked){border-color:#68b9e8;box-shadow:0 8px 24px rgba(20,55,83,.08)}
+.calc-item input{margin-top:5px;width:18px;height:18px;accent-color:#0e75ba}
+.calc-item strong{display:block;color:#0c2a46}.calc-item small{display:block;color:#647487;margin-top:4px;line-height:1.4}.calc-item b{white-space:nowrap;color:#0b5f99}
+.calc-summary{position:sticky;top:82px;border:1px solid #dfe7ee;border-radius:12px;padding:26px;background:#f8fbfd;box-shadow:var(--shadow)}
+.calc-summary .label{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:900;color:#0b71ad}
+.calc-total{font-size:48px;line-height:1;font-weight:900;color:#062f59;margin:10px 0}.calc-summary p{color:#627184}
+.calc-urgency{display:grid;gap:7px;margin:20px 0;font-weight:800;color:#17344f}.calc-urgency select{padding:12px;border:1px solid #cfdce7;border-radius:8px;background:#fff;font:inherit}
+.calc-selected{display:grid;gap:7px;margin:16px 0;font-size:13px;color:#506274}.calc-selected span{padding-bottom:7px;border-bottom:1px solid #e0e8ef}
+.calc-summary .btn{width:100%;margin-top:10px}.calc-reset{cursor:pointer}.calc-note{display:block;color:#718195;line-height:1.5;margin-top:16px}
+@media(max-width:900px){.calculator{grid-template-columns:1fr}.calc-summary{position:static}.calc-services{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.calc-services{grid-template-columns:1fr}.calc-item{grid-template-columns:auto 1fr}.calc-item b{grid-column:2}.calc-total{font-size:42px}}
