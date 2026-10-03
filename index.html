@@ -70,5 +70,13 @@
 </main>
 <footer class="footer"><div class="container"><div class="footer-row"><div><strong>NordBridge</strong> · Denmark · CVR 46768736 · info@nordbridge-global.com</div><div class="footer-links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div></div><p class="legal">NordBridge is an independent business introducer and transaction facilitator. Specific services, confidentiality obligations, fees and transaction protections are governed by written agreements between the relevant parties.</p></div></footer>
 <script src="i18n.js"></script>
+<script>
+document.addEventListener('click',function(e){
+  const a=e.target.closest('a[href]'); if(!a||typeof window.gtag!=='function') return;
+  const href=a.getAttribute('href')||'';
+  if(href.includes('wa.me/')) gtag('event','whatsapp_click',{link_url:a.href,page_path:location.pathname});
+  else if(href.startsWith('mailto:')) gtag('event','email_click',{link_url:href,page_path:location.pathname});
+});
+</script>
 </body>
 </html>
