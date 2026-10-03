@@ -7,6 +7,27 @@
   gtag('js', new Date());
   gtag('config', 'G-KW3F5F27BX');
 </script>
+<script>
+(function(){
+  var key='nb_conversion_'+location.pathname;
+  try{
+    if(!sessionStorage.getItem(key)){
+      window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+      gtag('event','generate_lead',{
+        event_category:'conversion',
+        event_label:'confirmed_enquiry',
+        page_path:location.pathname
+      });
+      gtag('event','nb_enquiry_received',{
+        page_path:location.pathname
+      });
+      sessionStorage.setItem(key,'1');
+    }
+  }catch(e){
+    gtag('event','generate_lead',{event_category:'conversion',event_label:'confirmed_enquiry',page_path:location.pathname});
+  }
+})();
+</script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Enquiry Received | NordBridge</title>
 <meta name="description" content="NordBridge has received your enquiry. Review the next steps for tender support, contractor sourcing or procurement coordination.">
 <link rel="canonical" href="https://nordbridge-global.com/thanks.html"><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="style.css"><link rel="icon" href="logo.svg"></head><body><header>
