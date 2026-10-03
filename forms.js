@@ -54,6 +54,12 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   }
 
   form.addEventListener('submit',e=>{
+    if(typeof window.gtag==='function'){
+      window.gtag('event','nb_form_submit',{
+        form_subject:form.dataset.mailSubject||'NordBridge website enquiry',
+        page_path:location.pathname
+      });
+    }
     if(!form.reportValidity()){e.preventDefault();return;}
     if(form.dataset.submitting==='true'){e.preventDefault();return;}
     form.dataset.submitting='true';
