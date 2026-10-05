@@ -1,3 +1,5 @@
+const nbParams=new URLSearchParams(location.search);
+const nbDealId=nbParams.get('deal_id')||('NB-'+new Date().toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,8).toUpperCase());
 document.querySelectorAll('.lead-form').forEach(form=>{
   form.action='https://formsubmit.co/b725f79abde568a9761c73d482dca435';
   form.method='POST';
@@ -31,6 +33,8 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   };
 
   addHidden('_subject',form.dataset.mailSubject||'NordBridge website enquiry');
+  addHidden('NordBridge Deal ID',nbDealId);
+  addHidden('Lead source page',location.pathname);
   if(estimate) addHidden('Calculator estimate',estimate);
   if(services) addHidden('Calculator services',services);
   if(priority) addHidden('Calculator priority',priority);
