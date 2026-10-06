@@ -40,14 +40,30 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   form.addEventListener('submit',e=>{
     if(!form.reportValidity()){e.preventDefault();return;}
     if(form.dataset.submitting==='true'){e.preventDefault();return;}
-    if(typeof window.gtag==='function') window.gtag('event','generate_lead',{currency:'EUR',form_subject:form.dataset.mailSubject||'NordBridge website enquiry',page_path:location.pathname,deal_id:nbStoredDealId,lead_source:nbAttribution.utm_source||'direct',lead_medium:nbAttribution.utm_medium||'(none)',lead_campaign:nbAttribution.utm_campaign||'(not set)'});
-    try{sessionStorage.setItem('nb_pending_enquiry','1');sessionStorage.setItem('nb_pending_deal_id',nbStoredDealId);}catch(err){}
+
+    // Diagnostic only: this records an attempted valid form submission.
+    // It is deliberately NOT the lead conversion event.
+    if(typeof window.gtag==='function') window.gtag('event','nb_form_submit_attempt',{
+      form_subject:form.dataset.mailSubject||'NordBridge website enquiry',
+      page_path:location.pathname,
+      deal_id:nbStoredDealId,
+      lead_source:nbAttribution.utm_source||'direct',
+      lead_medium:nbAttribution.utm_medium||'(none)',
+      lead_campaign:nbAttribution.utm_campaign||'(not set)'
+    });
+
+    try{
+      sessionStorage.setItem('nb_pending_enquiry','1');
+      sessionStorage.setItem('nb_pending_enquiry_ts',String(Date.now()));
+      sessionStorage.setItem('nb_pending_deal_id',nbStoredDealId);
+    }catch(err){}
+
     form.dataset.submitting='true';
     const email=form.querySelector('input[type="email"]');if(email&&email.value) addHidden('_replyto',email.value);
     addHidden('_url',location.href);
     const btn=form.querySelector('button[type="submit"]');
     if(btn){if(!btn.dataset.originalText) btn.dataset.originalText=btn.textContent;const lang=document.documentElement.lang||'en';const sending={en:'Sending…',uk:'Надсилання…',da:'Sender…',ar:'جارٍ الإرسال…'}[lang]||'Sending…';btn.disabled=true;btn.setAttribute('aria-disabled','true');btn.textContent=sending;}
     const status=document.createElement('div');status.className='form-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.textContent=({en:'Submitting your enquiry…',uk:'Надсилаємо вашу заявку…',da:'Sender din forespørgsel…',ar:'جارٍ إرسال طلبك…'}[document.documentElement.lang||'en']||'Submitting your enquiry…');form.appendChild(status);
-    window.setTimeout(()=>{if(document.visibilityState==='visible'&&form.dataset.submitting==='true'){form.dataset.submitting='false';if(btn){btn.disabled=false;btn.removeAttribute('aria-disabled');btn.textContent=btn.dataset.originalText||'Submit';}status.className='form-status error';status.textContent='The page did not confirm submission. Please try again or contact NordBridge directly.';}},12000);
+    window.setTimeout(()=>{if(document.visibilityState==='visible'&&form.dataset.submitting==='true'){form.dataset.submitting='false';try{sessionStorage.removeItem('nb_pending_enquiry');sessionStorage.removeItem('nb_pending_enquiry_ts');sessionStorage.removeItem('nb_pending_deal_id');}catch(err){}if(btn){btn.disabled=false;btn.removeAttribute('aria-disabled');btn.textContent=btn.dataset.originalText||'Submit';}status.className='form-status error';status.textContent='The page did not confirm submission. Please try again or contact NordBridge directly.';}},12000);
   });
 });
