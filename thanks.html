@@ -12,5 +12,29 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
 <main><section><div class="container" style="max-width:900px"><div class="section-head" style="text-align:center"><div class="section-kicker">NordBridge</div><h1>Enquiry received.</h1><p>NordBridge will review the information you submitted and use the contact details provided if clarification or a commercial scope is required.</p></div><div class="card-grid"><div class="card"><div class="label">Tender support</div><h3>Next step: scope and payment</h3><p>If your enquiry is for tender support, NordBridge will review the submitted information and confirm the applicable package or custom scope in writing. Fixed-scope tender work starts only after 100% advance payment is received in cleared funds.</p><a href="submit-tender.html">Review tender packages →</a></div><div class="card"><div class="label">Contractors & suppliers</div><h3>Looking for opportunities?</h3><p>A complete capability profile improves the initial matching review, including sectors, certifications, target markets and contract size.</p><a href="company-profile.html">Review company profile →</a></div><div class="card"><div class="label">Buyers</div><h3>Need a counterpart?</h3><p>Provide project location, qualification criteria, timing and procurement status to support targeted contractor or supplier sourcing.</p><a href="buyer-request.html">Review buyer request →</a></div></div><div class="hero-actions" style="justify-content:center;margin-top:30px"><a class="btn primary" href="index.html">Return to NordBridge</a><a class="btn outline" href="https://wa.me/4571887925" target="_blank" rel="noopener">WhatsApp</a></div><p style="text-align:center;margin-top:24px;color:#627184">Do not send passwords, payment-card information or other highly sensitive credentials through website forms or ordinary messaging. NordBridge will provide payment instructions only after the commercial scope has been confirmed.</p></div></section></main>
 <script src="i18n.js"></script><script src="analytics-events.js"></script>
 <script>
-(function(){var pending=false,deal='';try{pending=sessionStorage.getItem('nb_pending_enquiry')==='1';deal=sessionStorage.getItem('nb_pending_deal_id')||sessionStorage.getItem('nb_deal_id')||'';if(pending){sessionStorage.removeItem('nb_pending_enquiry');sessionStorage.removeItem('nb_pending_deal_id');}}catch(e){}if(!pending)return;var extra={event_category:'conversion',event_label:'confirmed_enquiry'};if(deal)extra.deal_id=deal;if(window.NordBridgeTracking&&typeof window.NordBridgeTracking.track==='function'){window.NordBridgeTracking.track('lead_success',extra);window.NordBridgeTracking.track('nb_enquiry_received',extra);}else if(typeof window.gtag==='function'){gtag('event','lead_success',extra);gtag('event','nb_enquiry_received',extra);}})();
+(function(){
+  var pending=false,deal='',ts=0;
+  try{
+    pending=sessionStorage.getItem('nb_pending_enquiry')==='1';
+    deal=sessionStorage.getItem('nb_pending_deal_id')||sessionStorage.getItem('nb_deal_id')||'';
+    ts=parseInt(sessionStorage.getItem('nb_pending_enquiry_ts')||'0',10);
+  }catch(e){}
+  var fresh=pending&&ts>0&&(Date.now()-ts)<30*60*1000;
+  if(!fresh)return;
+
+  try{
+    sessionStorage.removeItem('nb_pending_enquiry');
+    sessionStorage.removeItem('nb_pending_enquiry_ts');
+    sessionStorage.removeItem('nb_pending_deal_id');
+  }catch(e){}
+
+  var extra={event_category:'conversion',event_label:'confirmed_enquiry'};
+  if(deal)extra.deal_id=deal;
+
+  if(window.NordBridgeTracking&&typeof window.NordBridgeTracking.track==='function'){
+    window.NordBridgeTracking.track('nb_confirmed_enquiry',extra);
+  }else if(typeof window.gtag==='function'){
+    gtag('event','nb_confirmed_enquiry',extra);
+  }
+})();
 </script></body></html>
