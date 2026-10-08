@@ -32,9 +32,9 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
   if(deal)extra.deal_id=deal;
 
   if(window.NordBridgeTracking&&typeof window.NordBridgeTracking.track==='function'){
-    window.NordBridgeTracking.track('nb_confirmed_enquiry',extra);
+    window.NordBridgeTracking.track('nb_enquiry_received',extra);
   }else if(typeof window.gtag==='function'){
-    gtag('event','nb_confirmed_enquiry',extra);
+    gtag('event','nb_enquiry_received',extra);
   }
 })();
 </script></body></html>
