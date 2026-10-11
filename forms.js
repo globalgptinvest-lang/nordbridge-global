@@ -30,7 +30,6 @@ document.querySelectorAll('.lead-form').forEach(form=>{
   if(services) addHidden('Calculator services',services);
   if(priority) addHidden('Calculator priority',priority);
   addHidden('_template','table');
-  addHidden('_captcha','false');
   addHidden('_next','https://nordbridge-global.com/thanks.html');
   addHidden('_url',location.href);
 
