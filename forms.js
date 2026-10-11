@@ -51,10 +51,15 @@ document.querySelectorAll('.lead-form').forEach(form=>{
       lead_campaign:nbAttribution.utm_campaign||'(not set)'
     });
 
+    // A success redirect must return this one-time, per-submission token.
+    // An ordinary visit to thanks.html must never become a lead conversion.
+    const confirmationToken=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2);
+    addHidden('_next','https://nordbridge-global.com/thanks.html?submission='+encodeURIComponent(confirmationToken));
     try{
       sessionStorage.setItem('nb_pending_enquiry','1');
       sessionStorage.setItem('nb_pending_enquiry_ts',String(Date.now()));
       sessionStorage.setItem('nb_pending_deal_id',nbStoredDealId);
+      sessionStorage.setItem('nb_pending_enquiry_token',confirmationToken);
     }catch(err){}
 
     form.dataset.submitting='true';
@@ -63,6 +68,15 @@ document.querySelectorAll('.lead-form').forEach(form=>{
     const btn=form.querySelector('button[type="submit"]');
     if(btn){if(!btn.dataset.originalText) btn.dataset.originalText=btn.textContent;const lang=document.documentElement.lang||'en';const sending={en:'Sending…',uk:'Надсилання…',da:'Sender…',ar:'جارٍ الإرسال…'}[lang]||'Sending…';btn.disabled=true;btn.setAttribute('aria-disabled','true');btn.textContent=sending;}
     const status=document.createElement('div');status.className='form-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.textContent=({en:'Submitting your enquiry…',uk:'Надсилаємо вашу заявку…',da:'Sender din forespørgsel…',ar:'جارٍ إرسال طلبك…'}[document.documentElement.lang||'en']||'Submitting your enquiry…');form.appendChild(status);
-    window.setTimeout(()=>{if(document.visibilityState==='visible'&&form.dataset.submitting==='true'){form.dataset.submitting='false';try{sessionStorage.removeItem('nb_pending_enquiry');sessionStorage.removeItem('nb_pending_enquiry_ts');sessionStorage.removeItem('nb_pending_deal_id');}catch(err){}if(btn){btn.disabled=false;btn.removeAttribute('aria-disabled');btn.textContent=btn.dataset.originalText||'Submit';}status.className='form-status error';status.textContent='The page did not confirm submission. Please try again or contact NordBridge directly.';}},12000);
+    window.setTimeout(()=>{if(document.visibilityState==='visible'&&form.dataset.submitting==='true'){resetSubmission();status.className='form-status error';status.textContent=({en:'The page did not confirm submission. Please try again or contact NordBridge directly.',uk:'Сторінка не підтвердила надсилання. Спробуйте ще раз або зв’яжіться з NordBridge напряму.',da:'Siden bekræftede ikke indsendelsen. Prøv igen, eller kontakt NordBridge direkte.',ar:'لم تؤكد الصفحة إرسال الطلب. يرجى المحاولة مجدداً أو التواصل مع NordBridge مباشرة.'}[document.documentElement.lang||'en']||'The page did not confirm submission. Please try again or contact NordBridge directly.');}},12000);
   });
+  function resetSubmission(){
+    form.dataset.submitting='false';
+    try{['nb_pending_enquiry','nb_pending_enquiry_ts','nb_pending_deal_id','nb_pending_enquiry_token'].forEach(key=>sessionStorage.removeItem(key));}catch(err){}
+    const btn=form.querySelector('button[type="submit"]');
+    if(btn){btn.disabled=false;btn.removeAttribute('aria-disabled');if(btn.dataset.originalText)btn.textContent=btn.dataset.originalText;}
+  }
+  // Back navigation from the spam-check/provider page may restore a disabled
+  // button from the browser's page cache. Restore the form for a genuine retry.
+  window.addEventListener('pageshow',event=>{if(event.persisted){resetSubmission();form.querySelectorAll('.form-status').forEach(el=>el.remove());}});
 });
