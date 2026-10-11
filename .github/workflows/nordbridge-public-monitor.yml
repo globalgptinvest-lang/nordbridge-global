@@ -1,0 +1,42 @@
+name: NordBridge public opportunities monitor
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-public-monitor
+  cancel-in-progress: false
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore public-only dedupe state
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/nordbridge-state.json
+          key: public-monitor-${{ github.run_id }}
+          restore-keys: |
+            public-monitor-
+      - name: Scan official public TED notices and site
+        env:
+          NORDBRIDGE_STATE: /tmp/nordbridge-state.json
+          NORDBRIDGE_REPORT: /tmp/nordbridge-report.json
+        run: python3 automation/public_monitor.py
+      - name: Save public-only dedupe state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/nordbridge-state.json
+          key: public-monitor-${{ github.run_id }}
+      - name: Store public-only report for 3 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-monitor-${{ github.run_id }}
+          path: /tmp/nordbridge-report.json
+          retention-days: 3
+          if-no-files-found: warn
