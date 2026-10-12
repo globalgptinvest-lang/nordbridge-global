@@ -1,0 +1,28 @@
+name: NordBridge form safety audit
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "forms.js"
+      - ".github/workflows/nordbridge-form-audit.yml"
+  schedule:
+    - cron: "31 7 * * 1"
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify JavaScript syntax
+        run: node --check forms.js
+      - name: Verify consent and anti-duplicate controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "privacy_consent" forms.js || { echo "::error::Missing consent control"; exit 1; }
+          grep -q "form.reportValidity()" forms.js || { echo "::error::Missing form validation"; exit 1; }
+          grep -q "form.dataset.submitting" forms.js || { echo "::error::Missing repeat submit guard"; exit 1; }
+          grep -q "formsubmit.co" forms.js || { echo "::error::FormSubmit action unexpectedly changed"; exit 1; }
+          echo "Static form safety checks passed; delivery not verified."
