@@ -30,8 +30,8 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
     if(message)message.textContent='We cannot verify that your enquiry was received. If you submitted a form, please check your confirmation or contact info@nordbridge-global.com before sending again.';
     return;
   }
-  if(heading)heading.textContent='Enquiry received.';
-  if(message)message.textContent='NordBridge will review the information you submitted and use the contact details provided if clarification or a commercial scope is required.';
+  if(heading)heading.textContent='Form submission returned.';
+  if(message)message.textContent='The form provider redirected you back to NordBridge. Delivery to our mailbox has not been independently verified. If you do not receive confirmation, contact info@nordbridge-global.com.';
 
   try{
     sessionStorage.removeItem('nb_pending_enquiry');
@@ -40,13 +40,13 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
     sessionStorage.removeItem('nb_pending_enquiry_token');
   }catch(e){}
 
-  var extra={event_category:'conversion',event_label:'confirmed_enquiry'};
+  var extra={event_category:'diagnostic',event_label:'form_provider_return_unverified'};
   if(deal)extra.deal_id=deal;
 
   if(window.NordBridgeTracking&&typeof window.NordBridgeTracking.track==='function'){
-    window.NordBridgeTracking.track('generate_lead',extra);
+    window.NordBridgeTracking.track('nb_form_provider_return',extra);
   }else if(typeof window.gtag==='function'){
-    gtag('event','generate_lead',extra);
+    gtag('event','nb_form_provider_return',extra);
   }
 })();
 </script></body></html>
