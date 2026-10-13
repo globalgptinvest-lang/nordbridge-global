@@ -1,15 +1,22 @@
-# Legacy Airtable intake retired. The NordBridge deal registry is monday.com.
-# This workflow is manual-only until a verified monday.com integration is implemented.
-name: NordBridge CRM intake (legacy disabled)
+# NordBridge single-source CRM integration gate
+# The legacy Airtable workflow is intentionally disabled.
+# Gmail -> monday.com writes require verified boards:write permission and a tested
+# idempotent integration. Do not silently switch CRM providers.
+name: NordBridge CRM integration gate
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  notice:
+  readiness:
     runs-on: ubuntu-latest
     steps:
-      - name: Explain disabled legacy integration
+      - name: Explain integration prerequisites
+        shell: bash
         run: |
-          echo "Legacy Airtable CRM intake is disabled. NordBridge uses monday.com Deal Registry." >> "$GITHUB_STEP_SUMMARY"
-          echo "No Gmail data was read, and no CRM records were created by this workflow." >> "$GITHUB_STEP_SUMMARY"
+          echo "## NordBridge CRM readiness" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Canonical CRM: monday.com GLOBAL DEAL ENGINE — Deal Registry (board 5103432319)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Gmail-to-CRM ingestion: NOT ENABLED; monday.com API create returned USER_UNAUTHORIZED on 2026-10-13." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Legacy Airtable writes: DISABLED." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Before enabling writes: verify boards:write, idempotency by Gmail message/thread IDs, duplicate prevention, least privilege, and audit logs." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Never log message bodies, personal data, credentials, or access tokens." >> "$GITHUB_STEP_SUMMARY"
