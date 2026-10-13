@@ -1,35 +1,15 @@
-name: NordBridge CRM intake
+# Legacy Airtable intake retired. The NordBridge deal registry is monday.com.
+# This workflow is manual-only until a verified monday.com integration is implemented.
+name: NordBridge CRM intake (legacy disabled)
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "23 */3 * * *"
 permissions:
   contents: read
-concurrency:
-  group: nordbridge-crm-intake
-  cancel-in-progress: false
 jobs:
-  intake:
+  notice:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      GMAIL_CLIENT_ID: ${{ secrets.NB_GMAIL_CLIENT_ID }}
-      GMAIL_CLIENT_SECRET: ${{ secrets.NB_GMAIL_CLIENT_SECRET }}
-      GMAIL_REFRESH_TOKEN: ${{ secrets.NB_GMAIL_REFRESH_TOKEN }}
-      AIRTABLE_PAT: ${{ secrets.NB_AIRTABLE_PAT }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Check required secrets
-        shell: bash
+      - name: Explain disabled legacy integration
         run: |
-          for name in GMAIL_CLIENT_ID GMAIL_CLIENT_SECRET GMAIL_REFRESH_TOKEN AIRTABLE_PAT; do
-            if [ -z "${!name}" ]; then
-              echo "::error::Missing required GitHub Actions secret for $name"
-              exit 1
-            fi
-          done
-      - name: Import verified FormSubmit notifications into Airtable
-        run: python3 scripts/nordbridge_intake.py
-      - name: Report outcome
-        if: always()
-        run: echo "NordBridge intake result: ${{ job.status }}. Check job logs for new-record count." >> "$GITHUB_STEP_SUMMARY"
+          echo "Legacy Airtable CRM intake is disabled. NordBridge uses monday.com Deal Registry." >> "$GITHUB_STEP_SUMMARY"
+          echo "No Gmail data was read, and no CRM records were created by this workflow." >> "$GITHUB_STEP_SUMMARY"
