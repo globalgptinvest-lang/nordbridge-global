@@ -14,6 +14,8 @@ async def main():
     sitemap_paths = {urlparse(u).path for u in urls}
     # /index.html is an alternative path to the canonical homepage /.
     sitemap_paths.add("/index.html")
+    # Sitemap omissions are warnings, but explicitly keep canonical aliases recognized.
+    # The source sitemap may be updated independently from this test.
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         for width, height in [(1365, 900), (390, 844)]:
