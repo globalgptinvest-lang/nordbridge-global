@@ -7,6 +7,7 @@ on:
       - "sitemap.xml"
       - "scripts/external_browser_audit.py"
       - "scripts/calculator_browser_tests.py"
+      - "scripts/translation_browser_tests.py"
       - ".github/workflows/nordbridge-external-browser-audit.yml"
   schedule:
     - cron: "43 6 * * *"
@@ -29,3 +30,5 @@ jobs:
         run: python scripts/external_browser_audit.py
       - name: Test public calculators without submitting forms
         run: python scripts/calculator_browser_tests.py
+      - name: Verify four-language financing page switcher
+        run: python scripts/translation_browser_tests.py
