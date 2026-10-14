@@ -1,6 +1,5 @@
 """Non-destructive production browser checks for NordBridge calculators."""
 import asyncio
-from urllib.parse import parse_qs, urlparse
 from playwright.async_api import async_playwright
 
 BASE = "https://nordbridge-global.com"
@@ -30,6 +29,7 @@ async def main():
             assert await warning.is_visible(), "Financing minimum threshold warning not shown"
             await page.goto(BASE + "/", wait_until="domcontentloaded")
             calculator = page.locator("#service-calculator")
+            assert await calculator.count() == 1, "Service calculator missing from homepage"
             if await calculator.count():
                 total = page.locator("#calc-total")
                 checks = calculator.locator(".calc-item input")
@@ -40,6 +40,7 @@ async def main():
                 href = await page.locator("#calc-request").get_attribute("href")
                 assert "package=custom" in (href or ""), "Service request link not updated"
                 assert "services=" in (href or ""), "Selected services missing from request"
+                assert "estimate=" in (href or ""), "Estimated price missing from request"
                 await page.locator("#calc-reset").click()
                 assert (await total.inner_text()).strip() in ("€0", "€0.00"), "Reset did not clear total"
             assert not errors, f"JavaScript exceptions: {errors[:3]}"
