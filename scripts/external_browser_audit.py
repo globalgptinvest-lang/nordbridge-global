@@ -12,6 +12,8 @@ async def main():
     if not urls:
         raise SystemExit("No sitemap URLs found")
     sitemap_paths = {urlparse(u).path for u in urls}
+    # /index.html is an alternative path to the canonical homepage /.
+    sitemap_paths.add("/index.html")
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         for width, height in [(1365, 900), (390, 844)]:
