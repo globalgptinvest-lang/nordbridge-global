@@ -1,4 +1,4 @@
-import asyncio, os, re, xml.etree.ElementTree as ET
+import asyncio, xml.etree.ElementTree as ET
 from urllib.request import urlopen
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
@@ -11,6 +11,7 @@ async def main():
     urls = [n.text.strip() for n in root.findall(".//{*}loc") if n.text]
     if not urls:
         raise SystemExit("No sitemap URLs found")
+    sitemap_paths = {urlparse(u).path for u in urls}
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         for width, height in [(1365, 900), (390, 844)]:
@@ -29,6 +30,17 @@ async def main():
                     if not title: warnings.append(f"Missing title: {url}")
                     lang = await page.locator("html").get_attribute("lang")
                     if not lang: warnings.append(f"Missing html lang: {url}")
+                    # Check visible interactive controls without activating external services.
+                    controls = await page.locator("button, input[type=button], input[type=submit], [role=button]").evaluate_all("""els => els.filter(e => e.getClientRects().length > 0).map(e => ({name:(e.innerText||e.value||e.getAttribute("aria-label")||e.getAttribute("title")||"").trim(), disabled:e.disabled===true}))""")
+                    for control in controls:
+                        if not control["name"]:
+                            warnings.append(f"Unlabelled visible button: {url}")
+                    broken_anchors = await page.locator("a[href^='#']").evaluate_all("""els => els.filter(e => {const id=e.getAttribute("href").slice(1);return id && !document.getElementById(id) && !document.getElementsByName(id).length}).map(e => e.getAttribute("href"))""")
+                    for anchor in broken_anchors:
+                        warnings.append(f"Broken in-page anchor: {url} -> {anchor}")
+                    images = await page.locator("img:not([alt])").count()
+                    if images:
+                        warnings.append(f"Images missing alt attribute ({images}): {url}")
                     links = await page.locator("a[href]").evaluate_all("""els => els.map(e => ({href:e.href,text:(e.innerText||e.getAttribute('aria-label')||'').trim()}))""")
                     for link in links:
                         href = link["href"]
@@ -36,7 +48,7 @@ async def main():
                         if not link["text"] and not href.endswith("#"): warnings.append(f"Unlabelled link: {url} -> {href}")
                         if urlparse(href).netloc == urlparse(BASE).netloc:
                             path = urlparse(href).path
-                            if path.endswith(".html") and path not in {urlparse(u).path for u in urls}:
+                            if path.endswith(".html") and path not in sitemap_paths:
                                 warnings.append(f"Internal HTML link not in sitemap: {url} -> {href}")
                     forms = await page.locator("form").count()
                     for i in range(forms):
