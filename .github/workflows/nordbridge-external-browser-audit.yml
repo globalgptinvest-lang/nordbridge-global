@@ -6,6 +6,7 @@ on:
       - "**/*.html"
       - "sitemap.xml"
       - "scripts/external_browser_audit.py"
+      - "scripts/calculator_browser_tests.py"
       - ".github/workflows/nordbridge-external-browser-audit.yml"
   schedule:
     - cron: "43 6 * * *"
@@ -26,3 +27,5 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Audit public site in desktop and mobile browsers
         run: python scripts/external_browser_audit.py
+      - name: Test public calculators without submitting forms
+        run: python scripts/calculator_browser_tests.py
