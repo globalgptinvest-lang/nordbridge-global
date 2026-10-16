@@ -8,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
+import urllib.error
 import urllib.request
 
 TED_API = "https://api.ted.europa.eu/v3/notices/search"
@@ -21,10 +23,21 @@ def http_json(url, payload=None, timeout=25):
     if data:
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request(url, data=data, headers=headers, method="POST" if data else "GET")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        if response.status != 200:
-            raise RuntimeError(f"HTTP {response.status}")
-        return json.load(response)
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if response.status != 200:
+                    raise RuntimeError(f"HTTP {response.status}")
+                return json.load(response)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt == 2:
+                raise
+            retry_after = exc.headers.get("Retry-After", "")
+            try:
+                delay = int(retry_after)
+            except (TypeError, ValueError):
+                delay = 3 * (attempt + 1)
+            time.sleep(max(1, min(delay, 15)))
 
 def check_website(url=SITE):
     request = urllib.request.Request(url, headers={"User-Agent": "NordBridge-site-monitor/1.0"})
@@ -98,6 +111,8 @@ def safe_summary(report):
         for x in report["new"][:15]:
             clean = x["title"].replace("\n", " ").replace("\r", " ").replace("|", "-").replace("[", "(").replace("]", ")")
             lines.append(f"- {clean[:120]} — {x['url']}")
+    if report.get("partial"):
+        lines.append("\nPartial TED scan: some queries failed; do not treat results as comprehensive.")
     if report["errors"]:
         lines.append("\n### Source errors\n")
         for x in report["errors"]:
@@ -110,10 +125,12 @@ def main():
     prior, first = read_state(state_path)
     site = check_website()
     found, errors = {}, []
+    successful_queries = 0
     for term in QUERIES:
         try:
             for n in query_ted(term):
                 found[n["id"]] = n
+            successful_queries += 1
         except Exception as exc:
             errors.append(f"TED {term}: {type(exc).__name__}: {str(exc)[:200]}")
     incoming = set(found)
@@ -123,6 +140,7 @@ def main():
         state_path.write_text(json.dumps({"seen": updated_seen}, ensure_ascii=False), encoding="utf8")
     report = {"checked_at": dt.datetime.now(dt.timezone.utc).isoformat(), "site": site,
               "first_run": first, "total_checked": len(incoming), "new": new, "errors": errors,
+              "successful_queries": successful_queries, "partial": bool(errors) and successful_queries > 0,
               "sources": ["TED Search API (anonymous, public notices)"]}
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf8")
     summary = safe_summary(report)
@@ -130,9 +148,11 @@ def main():
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf8") as handle:
             handle.write(summary)
-    if errors or not site["ok"]:
-        print("Check source/site errors before trusting this scan.", file=sys.stderr)
+    if not site["ok"] or successful_queries == 0:
+        print("Monitor failed: site unreachable or every TED query failed.", file=sys.stderr)
         return 1
+    if errors:
+        print("Partial TED results: review source errors in the saved report.", file=sys.stderr)
     return 0
 
 if __name__ == "__main__":
