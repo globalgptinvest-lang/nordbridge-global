@@ -48,5 +48,21 @@ class SitewideAuditTests(unittest.TestCase):
         self.assertEqual([x["code"] for x in result], ["BROKEN_ANCHOR"])
 
 
+    def test_all_sitemap_pages_have_www_canonical_and_language_script(self):
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[2]
+        xml = (root / "sitemap.xml").read_bytes()
+        paths = sitemap_urls(xml)
+        self.assertGreaterEqual(len(paths), 30)
+        for path in paths:
+            filename = "index.html" if path == "/" else path.lstrip("/")
+            html = (root / filename).read_text(encoding="utf8")
+            expected = "https://www.nordbridge-global.com" + path
+            with self.subTest(path=path):
+                self.assertIn(expected, html)
+                self.assertIn('rel="canonical"', html)
+                self.assertIn("i18n.js", html)
+
+
 if __name__ == "__main__":
     unittest.main()
