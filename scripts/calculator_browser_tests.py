@@ -1,6 +1,7 @@
 """Non-destructive production browser checks for NordBridge calculators."""
 import asyncio
 from playwright.async_api import async_playwright
+from audit_network import goto_with_retry
 
 BASE = "https://nordbridge-global.com"
 
@@ -11,7 +12,7 @@ async def main():
             page = await browser.new_page(viewport={"width": width, "height": height})
             errors = []
             page.on("pageerror", lambda exc: errors.append(str(exc)))
-            response = await page.goto(BASE + "/business-financing.html", wait_until="domcontentloaded")
+            response = await goto_with_retry(page, BASE + "/business-financing.html")
             assert response and response.ok, "Financing page unavailable"
             amount = page.locator("#finance-amount")
             upfront = page.locator("#finance-upfront")
