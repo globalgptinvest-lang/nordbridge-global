@@ -60,7 +60,7 @@ async def inspect_desktop(browser):
         r = await goto_with_retry(page, BASE + "/")
         assert r and r.ok, "Desktop home unavailable"
         assert not await page.locator("nav.nav .mobile-nav-toggle").is_visible()
-        assert await page.locator("nav.nav .nav-inner a[href='about.html']").is_visible()
+        assert await page.locator('nav.nav .nav-inner a[href$="about.html"]').is_visible()
     finally:
         await page.close()
 
