@@ -40,7 +40,19 @@ async def inspect_mobile(browser, path):
         assert (await toggle.text_content()).strip() == "القائمة", "Arabic menu label missing"
         assert await page.locator("html").get_attribute("dir") == "rtl", "RTL missing"
 
-        await toggle.click()
+        layout = await page.evaluate("""() => {
+          const el=document.querySelector('nav.nav .mobile-nav-toggle');
+          const r=el.getBoundingClientRect();
+          const cx=r.x+r.width/2, cy=r.y+r.height/2;
+          const at=document.elementFromPoint(cx,cy);
+          return {rect:{x:r.x,y:r.y,w:r.width,h:r.height},
+                  point:{x:cx,y:cy},hit:at?.tagName+' '+at?.className,
+                  hitIsButton:at===el,scrollX:scrollX,
+                  viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,
+                  dir:document.documentElement.dir};
+        }""")
+        print("RTL_MENU_DIAGNOSTIC",path,layout,flush=True)
+        await toggle.click(timeout=5500)
         assert await toggle.get_attribute("aria-expanded") == "true"
         target = inner.locator("a[href='about.html']").first
         assert await target.is_visible(), f"Menu about link missing: {path}"
