@@ -117,6 +117,7 @@ def meta_js():
           .filter(id=>id.length>1 && !document.getElementById(id.slice(1))
             && !document.getElementsByName(id.slice(1)).length).slice(0,12),
         unlabelled_controls: [...document.querySelectorAll('button, input:not([type=hidden]), select, textarea, [role=button]')]
+          .filter(el=>el.getAttribute('aria-hidden')!=='true' && el.tabIndex!==-1)
           .filter(visible).filter(el=>!accessible(el))
           .map(el=>el.tagName.toLowerCase()+(el.name?' name='+el.name:'')).slice(0,12),
         internal: [...document.querySelectorAll('a[href]')]
@@ -286,7 +287,7 @@ async def inspect(args):
     for path, name in page_titles:
         if name: duplicates.setdefault(name, []).append(path)
     for name, pages in duplicates.items():
-        if len(pages)>1:
+        if len(pages)>1 and set(pages)!={"/", "/index.html"}:
             findings.append(issue("DUPLICATE_TITLE", "warning", ", ".join(pages),
                                   "Repeated SEO title: "+name))
     findings = list({(f["code"], f["severity"], f["path"], f["detail"]):f
