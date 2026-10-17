@@ -21,7 +21,9 @@
           if(!button)continue;
           const holder=document.createElement('div');
           holder.className='nb-turnstile';
-          form.insertBefore(holder,button);
+          // The submit button may be nested inside a paragraph or layout wrapper.
+          // Insert alongside the actual button to preserve a working CRM route.
+          button.parentNode.insertBefore(holder,button);
           try{
             window.turnstile.render(holder,{
               sitekey:cfg.sitekey,
