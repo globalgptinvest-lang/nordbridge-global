@@ -177,6 +177,17 @@ async def inspect(args):
                                                       profile + ": HTTP " + str(record["http"])))
                                 continue
                             await page.wait_for_timeout(180)
+                            # Turnstile is loaded asynchronously. Inspect the final
+                            # form route rather than falsely reporting a slow CDN
+                            # as an unprotected permanent fallback.
+                            if await page.locator("form.lead-form").count():
+                                try:
+                                    await page.wait_for_function(
+                                        """() => [...document.querySelectorAll('form.lead-form')]
+                                          .every(form => form.dataset.intakeEnabled === 'true')""",
+                                        timeout=4500)
+                                except Exception:
+                                    pass  # The audited form will retain a warning.
                             data = await page.evaluate(meta_js())
                             record["data"] = {key: data.get(key) for key in (
                                 "title", "description", "canonical", "viewport", "lang",

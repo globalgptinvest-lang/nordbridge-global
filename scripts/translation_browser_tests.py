@@ -6,7 +6,7 @@ import asyncio
 from playwright.async_api import async_playwright
 from audit_network import goto_with_retry
 
-URL = "https://nordbridge-global.com/business-financing.html"
+URL = "https://www.nordbridge-global.com/business-financing.html"
 LANGS = {"en": "Funding", "uk": "фінанс", "da": "finans", "ar": "تمويل"}
 
 async def main():
