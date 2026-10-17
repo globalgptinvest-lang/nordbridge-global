@@ -1,13 +1,12 @@
 import asyncio, xml.etree.ElementTree as ET
-from urllib.request import urlopen
+from audit_network import read_bytes, goto_with_retry
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 
 BASE = "https://nordbridge-global.com"
 async def main():
     failures, warnings = [], []
-    with urlopen(BASE + "/sitemap.xml", timeout=30) as response:
-        root = ET.fromstring(response.read())
+    root = ET.fromstring(await asyncio.to_thread(read_bytes, BASE + "/sitemap.xml"))
     urls = [n.text.strip() for n in root.findall(".//{*}loc") if n.text]
     if not urls:
         raise SystemExit("No sitemap URLs found")
@@ -24,7 +23,7 @@ async def main():
                     failures.append(f"External sitemap URL: {url}")
                     continue
                 try:
-                    response = await page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                    response = await goto_with_retry(page, url, timeout=25000)
                     if not response or response.status >= 400:
                         failures.append(f"HTTP {response.status if response else 'none'}: {url}")
                         continue
@@ -67,4 +66,5 @@ async def main():
     for msg in sorted(set(failures)): print("ERROR:", msg)
     if failures: raise SystemExit(1)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
