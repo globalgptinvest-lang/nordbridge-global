@@ -177,7 +177,8 @@ def read_state(path):
         with Path(path).open(encoding="utf8") as handle:
             data = json.load(handle)
         if isinstance(data, dict) and isinstance(data.get("seen"), list):
-            return set(x for x in data["seen"][:MAX_IDS] if isinstance(x, str)), False
+            return {("TED:" + x if re.fullmatch(r"\d{6}-\d{4}", x) else x)
+                    for x in data["seen"][:MAX_IDS] if isinstance(x, str)}, False
     except (OSError, ValueError):
         pass
     return set(), True
@@ -189,7 +190,7 @@ def safe_summary(report):
              f"Website: {'OK' if report['site']['ok'] else 'CHECK NEEDED'}",
              f"Official sources queried: TED ({checks['ted_ok']}/{checks['ted_total']} rotating topics); UK Find a Tender ({checks['uk_ok']}/1)",
              f"Distinct notice candidates: {report['total_checked']}",
-             f"New since earlier scans: {len(report['new'])}", "",
+             f"First observed by this monitor: {len(report['new'])}", "",
              "Every result is an **unverified opportunity**. No claim of bidder eligibility, contract size, closing date or award."]
     if report["first_run"]:
         lines.append("First run: establishes baseline without announcing old notices as new.")
