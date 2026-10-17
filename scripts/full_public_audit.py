@@ -19,7 +19,11 @@ import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, urljoin
 
 from playwright.async_api import async_playwright
-from audit_network import read_bytes, goto_with_retry
+try:
+    from scripts.audit_network import read_bytes, goto_with_retry
+except ModuleNotFoundError:
+    # Direct invocation with `python scripts/full_public_audit.py`.
+    from audit_network import read_bytes, goto_with_retry
 
 BASE = "https://www.nordbridge-global.com"
 CANONICAL = "https://www.nordbridge-global.com"
