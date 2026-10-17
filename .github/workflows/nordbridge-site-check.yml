@@ -1,25 +1,76 @@
 name: NordBridge site health check
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/nordbridge-site-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/nordbridge-site-check.yml"
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "31 * * * *"
 permissions:
   contents: read
+concurrency:
+  group: nordbridge-site-health
+  cancel-in-progress: false
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Check public site and key pages
+      - name: Verify canonical site, HTTPS redirect, key pages and CRM readiness
         shell: bash
         run: |
           set -euo pipefail
-          for path in / /contact.html /privacy.html; do
-            url="https://nordbridge-global.com${path}"
-            code="$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 "$url")"
-            echo "$url HTTP $code"
-            if [[ ! "$code" =~ ^2[0-9][0-9]$ ]]; then
-              echo "::error::Site health failure: $url HTTP $code"
-              exit 1
+          echo "### NordBridge — hourly site/CRM readiness check" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Public URL | HTTP | Outcome |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---:|---|" >> "$GITHUB_STEP_SUMMARY"
+
+          # This probe is GET-only: no form submissions, email, tokens, CRM writes or payments.
+          urls=(
+            "https://nordbridge-global.com/"
+            "https://www.nordbridge-global.com/"
+            "https://www.nordbridge-global.com/contact.html"
+            "https://www.nordbridge-global.com/privacy.html"
+            "https://www.nordbridge-global.com/free-tender-fit-check.html"
+            "https://www.nordbridge-global.com/business-financing.html"
+            "https://www.nordbridge-global.com/api/intake-status"
+          )
+          failed=0
+          for url in "${urls[@]}"; do
+            outfile="$(mktemp)"
+            status="$(curl --location --silent --show-error \
+                --connect-timeout 10 --max-time 22 \
+                --retry 2 --retry-delay 3 --retry-all-errors \
+                --output "$outfile" --write-out '%{http_code}' "$url")" || status="000"
+            verdict="PASS"
+            if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
+              verdict="FAIL"
+              echo "::error::Site unavailable: $url HTTP $status"
+              failed=1
+            elif [[ "$url" == */api/intake-status ]]; then
+              if ! python3 - "$outfile" <<'PY'
+          import json, sys
+          try:
+              with open(sys.argv[1], encoding="utf8") as f:
+                  value=json.load(f)
+              assert value.get("ready") is True, "CRM not ready"
+          except (ValueError, OSError, AssertionError):
+              sys.exit(1)
+          PY
+              then
+                verdict="FAIL: server intake not ready"
+                echo "::error::CRM intake readiness failed: $url"
+                failed=1
+              fi
             fi
+            echo "| $url | $status | $verdict |" >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$outfile"
           done
+          if [[ "$failed" != 0 ]]; then
+            echo "::error::One or more public routes failed; customer-facing site/CRM may be disrupted"
+            exit 1
+          fi
+          echo "Public HTTPS and readiness checks passed (no form submitted)."
