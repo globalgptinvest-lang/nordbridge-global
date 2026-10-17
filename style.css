@@ -109,3 +109,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   html[dir="rtl"] .nav.has-mobile-menu .mobile-nav-toggle,
   html[dir="rtl"] .nav.has-mobile-menu .nav-inner{text-align:right}
 }
+
+/* Off-screen identity text must not create a 10,000px RTL layout.
+   Clip it visually instead of positioning it at left:-9999px. */
+[data-site-identity]{
+  left:0!important;right:auto!important;
+  clip:rect(0,0,0,0)!important;
+  clip-path:inset(50%)!important;
+  overflow:hidden!important;
+  white-space:nowrap;
+}
