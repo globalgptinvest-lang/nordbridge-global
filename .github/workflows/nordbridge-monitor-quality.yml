@@ -1,0 +1,33 @@
+name: NordBridge procurement automation quality gates
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "automation/**"
+      - ".github/workflows/nordbridge-monitor-quality.yml"
+  push:
+    branches: [main]
+    paths:
+      - "automation/**"
+      - ".github/workflows/nordbridge-monitor-quality.yml"
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify scripts compile
+        run: python -m compileall -q automation/public_monitor.py automation/contact_guard.py automation/tests
+      - name: Offline synthetic-source regression tests
+        run: python -m unittest discover -s automation/tests -v
+      - name: Verify no outbound or CRM writing added to monitoring script
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -Ei 'smtp\.|smtplib|send_message|send_email|write_to_airtable|write_to_monday' automation/public_monitor.py
+          echo "No mail/CRM send operations introduced."
