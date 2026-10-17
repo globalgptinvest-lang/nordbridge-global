@@ -51,6 +51,49 @@ Object.assign(translations.ar,{
 "Tender compliance checklist before bid submission":"قائمة التحقق من الامتثال للمناقصة قبل تقديم العطاء"
 });
 
+/* Initial visible titles/headers for six pages missing the language module. */
+Object.assign(translations.uk,{
+"International Procurement Support & Tender Services | NordBridge Denmark":"Міжнародний тендерний і закупівельний супровід | NordBridge Данія",
+"International procurement support and tender services":"Супровід міжнародних закупівель і тендерів",
+"Tender Subscription | NordBridge Denmark":"Підписка на тендери | NordBridge Данія",
+"NordBridge Tender Subscription":"Тендерна підписка NordBridge",
+"Enterprise Tender & Business Development | NordBridge Denmark":"Корпоративні тендери та розвиток бізнесу | NordBridge Данія",
+"Enterprise Tender & Business Development":"Корпоративні тендери та розвиток бізнесу",
+"NordBridge Pricing | Tender, Procurement & B2B Support":"Ціни NordBridge | Тендерний, закупівельний і B2B супровід",
+"Choose the level of support you need":"Оберіть потрібний рівень підтримки",
+"Why NordBridge Denmark | International Tender & Procurement Support":"Чому NordBridge Данія | Міжнародний тендерний і закупівельний супровід",
+"A defined role in complex international B2B work":"Чітко визначена роль у складних міжнародних B2B-проєктах",
+"Case Studies | NordBridge Denmark":"Приклади проєктів | NordBridge Данія",
+"NordBridge case studies":"Приклади проєктів NordBridge",
+});
+Object.assign(translations.da,{
+"International Procurement Support & Tender Services | NordBridge Denmark":"International indkøbs- og udbudsrådgivning | NordBridge Danmark",
+"International procurement support and tender services":"Støtte til internationale indkøb og udbud",
+"Tender Subscription | NordBridge Denmark":"Udbudsabonnement | NordBridge Danmark",
+"NordBridge Tender Subscription":"NordBridge udbudsabonnement",
+"Enterprise Tender & Business Development | NordBridge Denmark":"Virksomhedsudbud og forretningsudvikling | NordBridge Danmark",
+"Enterprise Tender & Business Development":"Virksomhedsudbud og forretningsudvikling",
+"NordBridge Pricing | Tender, Procurement & B2B Support":"NordBridge priser | Udbuds-, indkøbs- og B2B-støtte",
+"Choose the level of support you need":"Vælg det støtteniveau, du har brug for",
+"Why NordBridge Denmark | International Tender & Procurement Support":"Hvorfor NordBridge Danmark | Internationale udbud og indkøb",
+"A defined role in complex international B2B work":"En klart defineret rolle i komplekse internationale B2B-opgaver",
+"Case Studies | NordBridge Denmark":"Cases | NordBridge Danmark",
+"NordBridge case studies":"NordBridge cases",
+});
+Object.assign(translations.ar,{
+"International Procurement Support & Tender Services | NordBridge Denmark":"دعم المشتريات والمناقصات الدولية | NordBridge الدنمارك",
+"International procurement support and tender services":"دعم المشتريات الدولية وخدمات المناقصات",
+"Tender Subscription | NordBridge Denmark":"اشتراك المناقصات | NordBridge الدنمارك",
+"NordBridge Tender Subscription":"اشتراك مناقصات NordBridge",
+"Enterprise Tender & Business Development | NordBridge Denmark":"مناقصات الشركات وتطوير الأعمال | NordBridge الدنمارك",
+"Enterprise Tender & Business Development":"مناقصات الشركات وتطوير الأعمال",
+"NordBridge Pricing | Tender, Procurement & B2B Support":"أسعار NordBridge | دعم المناقصات والمشتريات وخدمات B2B",
+"Choose the level of support you need":"اختر مستوى الدعم المناسب لك",
+"Why NordBridge Denmark | International Tender & Procurement Support":"لماذا NordBridge الدنمارك | دعم المناقصات والمشتريات الدولية",
+"A defined role in complex international B2B work":"دور محدد بوضوح في أعمال B2B الدولية المعقدة",
+"Case Studies | NordBridge Denmark":"دراسات حالة | NordBridge الدنمارك",
+"NordBridge case studies":"دراسات حالة NordBridge",
+});
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
