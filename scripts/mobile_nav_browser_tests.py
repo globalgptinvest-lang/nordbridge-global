@@ -67,6 +67,19 @@ async def inspect_mobile(browser, path):
         await toggle.click(timeout=5500)
         assert await toggle.get_attribute("aria-expanded") == "true"
         target = inner.locator("a[href='about.html']").first
+        menu_state = await page.evaluate("""() => {
+          const n=document.querySelector('nav.nav');
+          const t=n?.querySelector('.mobile-nav-toggle');
+          const list=n?.querySelector('.nav-inner');
+          const anchor=list?.querySelector('a[href="about.html"]');
+          const rect=anchor?.getBoundingClientRect();
+          return {classes:n?.className,expanded:t?.getAttribute('aria-expanded'),
+                  listDisplay:list?getComputedStyle(list).display:null,
+                  count:list?.querySelectorAll('a').length,about:!!anchor,
+                  linkDisplay:anchor?getComputedStyle(anchor).display:null,
+                  anchorRect:rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null};
+        }""")
+        print("RTL_NAV_LINK_DIAGNOSTIC",path,menu_state,flush=True)
         assert await target.is_visible(), f"Menu about link missing: {path}"
         await target.click()
         await page.wait_for_url("**/about.html")
