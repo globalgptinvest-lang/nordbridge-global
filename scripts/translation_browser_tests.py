@@ -4,6 +4,7 @@ Does not claim human linguistic QA; only verifies functionality and nonempty loc
 """
 import asyncio
 from playwright.async_api import async_playwright
+from audit_network import goto_with_retry
 
 URL = "https://nordbridge-global.com/business-financing.html"
 LANGS = {"en": "Funding", "uk": "фінанс", "da": "finans", "ar": "تمويل"}
@@ -13,7 +14,7 @@ async def main():
         browser = await p.chromium.launch()
         for viewport in [{"width": 1365, "height": 900}, {"width": 390, "height": 844}]:
             page = await browser.new_page(viewport=viewport)
-            response = await page.goto(URL, wait_until="domcontentloaded")
+            response = await goto_with_retry(page, URL)
             assert response and response.ok, "Funding page unavailable"
             for lang, keyword in LANGS.items():
                 switch = page.locator(f".language-switcher [data-lang='{lang}']")
