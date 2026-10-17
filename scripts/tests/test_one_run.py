@@ -48,7 +48,7 @@ class ReportSafety(unittest.TestCase):
         def fake_get(url):
             if url.endswith("/api/intake-status"):
                 return b'{"ready": false}', url
-            return b"<html><body>NordBridge website</body></html>", (
+            return b"<html><head><title>NordBridge</title></head><body>NordBridge website online</body></html>", (
                 "https://www.nordbridge-global.com/" if url == "https://nordbridge-global.com/" else url)
         result = audit.check_public_site(getter=fake_get)
         status = {x["name"]:x["status"] for x in result}
