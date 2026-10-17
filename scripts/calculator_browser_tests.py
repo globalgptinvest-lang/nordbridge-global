@@ -3,7 +3,7 @@ import asyncio
 from playwright.async_api import async_playwright
 from audit_network import goto_with_retry
 
-BASE = "https://nordbridge-global.com"
+BASE = "https://www.nordbridge-global.com"
 
 async def main():
     async with async_playwright() as playwright:
