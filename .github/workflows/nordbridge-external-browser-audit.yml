@@ -15,6 +15,9 @@ on:
       - "scripts/external_browser_audit.py"
       - "scripts/calculator_browser_tests.py"
       - "scripts/translation_browser_tests.py"
+      - "scripts/mobile_nav_browser_tests.py"
+      - "i18n.js"
+      - "style.css"
       - ".github/workflows/nordbridge-external-browser-audit.yml"
   schedule:
     - cron: "43 6 * * *"
@@ -49,6 +52,21 @@ jobs:
         if: always()
         continue-on-error: true
         run: python scripts/translation_browser_tests.py
+      - name: Test new mobile menu on checked-out branch (no production writes)
+        id: mobile_menu
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/nb-mobile-test-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if curl -fsS http://127.0.0.1:8765/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          NORDBRIDGE_TEST_BASE=http://127.0.0.1:8765 python scripts/mobile_nav_browser_tests.py
       - name: Enforce full result and write readable summary
         if: always()
         shell: bash
@@ -56,6 +74,7 @@ jobs:
           BROWSER: ${{ steps.browser.outcome }}
           CALCULATOR: ${{ steps.calculator.outcome }}
           TRANSLATION: ${{ steps.translation.outcome }}
+          MOBILE_MENU: ${{ steps.mobile_menu.outcome }}
         run: |
           echo "### NordBridge public browser health" >> "$GITHUB_STEP_SUMMARY"
           echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
@@ -63,7 +82,8 @@ jobs:
           echo "| Site pages and responsive layout | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Financing calculators | $CALCULATOR |" >> "$GITHUB_STEP_SUMMARY"
           echo "| EN/UK/DA/AR language switcher | $TRANSLATION |" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$BROWSER" != success || "$CALCULATOR" != success || "$TRANSLATION" != success ]]; then
+          echo "| Accessible mobile menu and keyboard navigation | $MOBILE_MENU |" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$BROWSER" != success || "$CALCULATOR" != success || "$TRANSLATION" != success || "$MOBILE_MENU" != success ]]; then
             echo "::error::One or more public-site checks failed; inspect individual logs"
             exit 1
           fi
