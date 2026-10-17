@@ -75,6 +75,16 @@ class SourceTests(unittest.TestCase):
                 self.assertEqual(b["new"][0]["id"], "UK:123456-2026")
                 self.assertEqual(b["outreach_sent"], 0)
 
+    def test_legacy_ted_cache_ids_are_migrated(self):
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "state.json"
+            state.write_text(json.dumps({"seen": ["123456-2026", "UK:111111-2026"]}))
+            ids, first = monitor.read_state(state)
+            self.assertFalse(first)
+            self.assertIn("TED:123456-2026", ids)
+            self.assertIn("UK:111111-2026", ids)
+            self.assertNotIn("123456-2026", ids)
+
     def test_source_partial_vs_total_failure(self):
         with tempfile.TemporaryDirectory() as temp:
             p = Path(temp)
