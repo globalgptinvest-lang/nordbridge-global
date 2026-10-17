@@ -1,0 +1,48 @@
+name: NordBridge private CRM intake safety gates
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'forms-intake.js'
+      - 'scripts/tests/intake.test.cjs'
+      - '.github/workflows/nordbridge-intake-ci.yml'
+      - 'privacy.html'
+      - '*html'
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'forms-intake.js'
+      - 'scripts/tests/intake.test.cjs'
+      - '.github/workflows/nordbridge-intake-ci.yml'
+      - 'privacy.html'
+      - '*html'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax of all new routes and client
+        run: |
+          node --check api/lead.js
+          node --check api/intake-status.js
+          node --check forms-intake.js
+      - name: Offline safety and idempotency tests — synthetic records
+        run: node --test scripts/tests/intake.test.cjs
+      - name: Assert website forms preserve FormSubmit fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in submit-tender.html free-tender-fit-check.html business-financing.html buyer-request.html company-profile.html subscription-profile.html; do
+            grep -q 'forms.js?v=' "$f"
+            grep -q 'forms-intake.js?v=' "$f"
+            grep -q 'formsubmit.co/' "$f"
+          done
+          echo "Six forms retain a working fallback until a production-ready secure endpoint is configured."
