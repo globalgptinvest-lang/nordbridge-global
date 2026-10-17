@@ -45,11 +45,21 @@ async def inspect_mobile(browser, path):
           const r=el.getBoundingClientRect();
           const cx=r.x+r.width/2, cy=r.y+r.height/2;
           const at=document.elementFromPoint(cx,cy);
+          const outliers=[...document.querySelectorAll('body *')]
+            .map(n=>({n,r:n.getBoundingClientRect()}))
+            .filter(o=>o.r.width>800 || o.r.right>1800 || o.r.left<-300)
+            .sort((a,b)=>b.r.width-a.r.width)
+            .slice(0,12)
+            .map(o=>({tag:o.n.tagName,classes:String(o.n.className).slice(0,80),
+                      width:Math.round(o.r.width),left:Math.round(o.r.left),
+                      right:Math.round(o.r.right),text:o.n.textContent?.trim().slice(0,50)}));
           return {rect:{x:r.x,y:r.y,w:r.width,h:r.height},
                   point:{x:cx,y:cy},hit:at?.tagName+' '+at?.className,
                   hitIsButton:at===el,scrollX:scrollX,
-                  viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,
-                  dir:document.documentElement.dir};
+                  viewport:innerWidth,visualViewport:visualViewport?.width,
+                  metaViewport:document.querySelector('meta[name=viewport]')?.content,
+                  documentWidth:document.documentElement.scrollWidth,
+                  outliers:outliers,dir:document.documentElement.dir};
         }""")
         print("RTL_MENU_DIAGNOSTIC",path,layout,flush=True)
         await toggle.click(timeout=5500)
