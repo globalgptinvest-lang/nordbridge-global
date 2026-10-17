@@ -196,6 +196,43 @@ async def inspect(args):
                                 if not found_lang:
                                     findings.append(issue("NO_LANGUAGE_SWITCH", "warning", path,
                                                           "Page lacks four-language switcher"))
+                                else:
+                                    # Test on every public page, not only financing.
+                                    # Assert UI/head state, not subjective translation quality.
+                                    base_title = (await page.title()).strip()
+                                    base_heading = (await page.locator("h1").first.inner_text()).strip() if data.get("h1_count") else ""
+                                    translated = []
+                                    for language in LANGUAGES:
+                                        try:
+                                            button = page.locator(".language-switcher [data-lang='"+language+"']").first
+                                            await button.click(force=True, timeout=4000)
+                                            await page.wait_for_timeout(75)
+                                            state = await page.evaluate("""() => ({
+                                              lang:document.documentElement.lang,
+                                              dir:document.documentElement.dir,
+                                              title:document.title.trim(),
+                                              h1:(document.querySelector('h1')?.innerText||'').trim()
+                                            })""")
+                                            translated.append(state)
+                                            if state["lang"] != language or state["dir"] != ("rtl" if language=="ar" else "ltr"):
+                                                findings.append(issue("LANGUAGE_SWITCH_FAIL", "error", path,
+                                                                      "Incorrect lang/dir after "+language+" selection"))
+                                            if not state["title"] or (data.get("h1_count") and not state["h1"]):
+                                                findings.append(issue("TRANSLATION_EMPTY", "error", path,
+                                                                      "Missing visible heading or title in "+language))
+                                        except Exception as translation_error:
+                                            findings.append(issue("LANGUAGE_CLICK_FAIL", "error", path,
+                                                                  language+": "+type(translation_error).__name__))
+                                    # A preserved English title or heading is possible partial
+                                    # translation, not proof of a bad translation.
+                                    for state in translated:
+                                        if state["lang"]=="en":
+                                            continue
+                                        if len(base_heading)>18 and state["h1"]==base_heading and state["title"]==base_title:
+                                            findings.append(issue("TRANSLATION_COVERAGE", "warning", path,
+                                                                  state["lang"]+": headline and title unchanged"))
+                                    await page.locator(".language-switcher [data-lang='en']").first.click(force=True)
+                                    record["languages_tested"] = [v["lang"] for v in translated]
                             filename = "page_%02d_%s_%s.jpg" % (
                                 idx + 1, profile, "home" if path == "/" else
                                 re.sub(r"[^A-Za-z0-9-]", "_", path.strip("/")))
