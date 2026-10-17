@@ -3,7 +3,7 @@ from audit_network import read_bytes, goto_with_retry
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 
-BASE = "https://nordbridge-global.com"
+BASE = "https://www.nordbridge-global.com"
 async def main():
     failures, warnings = [], []
     root = ET.fromstring(await asyncio.to_thread(read_bytes, BASE + "/sitemap.xml"))
