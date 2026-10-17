@@ -83,7 +83,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
     appearance:none;display:flex;align-items:center;justify-content:space-between;
     width:92vw;margin:0 auto;padding:11px 14px;min-height:48px;
     background:#fff;border:1px solid #cadbe8;border-radius:8px;
-    font:700 15px/1.3 inherit;color:#073e70;cursor:pointer
+    font-family:inherit;font-weight:700;font-size:15px;line-height:1.3;color:#073e70;cursor:pointer
   }
   .nav.has-mobile-menu .mobile-nav-toggle:after{
     content:"▾";font-size:22px;line-height:1
