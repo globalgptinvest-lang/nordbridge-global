@@ -116,3 +116,31 @@ test('Turnstile hostname mismatch blocks request',async()=>{
   const r=response();await lead(request(),r);
   assert.equal(r.statusCode,403);
 });
+
+
+test('Nested subscription-profile submit button still activates protected CRM route', async()=>{
+  const fs=require('node:fs');
+  const vm=require('node:vm');
+  let wasInserted=false, challengeRendered=false;
+  const wrapper={insertBefore(el,before){assert.equal(before,button);wasInserted=true;}};
+  const button={parentNode:wrapper};
+  const form={
+    dataset:{},
+    action:'https://formsubmit.co/fallback',
+    method:'POST',
+    querySelector(sel){return sel==='button[type="submit"]'?button:null;}
+  };
+  const document={
+    querySelectorAll(sel){return sel==='form.lead-form'?[form]:[];},
+    createElement(){return{className:'',src:'',async:false,onload:null};},
+    head:{appendChild(el){queueMicrotask(()=>el.onload());}}
+  };
+  const window={turnstile:{render(holder,opts){challengeRendered=true;assert.equal(opts['response-field-name'],'cf-turnstile-response');}}};
+  const sandbox={document,window,fetch:async()=>({ok:true,json:async()=>({ready:true,sitekey:'1x00000000000000000000AA'})})};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../../forms-intake.js'),'utf8'),sandbox);
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(wasInserted,true);
+  assert.equal(challengeRendered,true);
+  assert.equal(form.action,'/api/lead');
+  assert.equal(form.dataset.intakeEnabled,'true');
+});

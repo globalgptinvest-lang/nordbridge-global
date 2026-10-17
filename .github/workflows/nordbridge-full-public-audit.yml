@@ -1,0 +1,79 @@
+name: NordBridge FULL external visual + SEO audit
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/full_public_audit.py"
+      - "scripts/tests/test_full_public_audit.py"
+      - ".github/workflows/nordbridge-full-public-audit.yml"
+      - "*.html"
+      - "sitemap.xml"
+      - "robots.txt"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/full_public_audit.py"
+      - "scripts/tests/test_full_public_audit.py"
+      - ".github/workflows/nordbridge-full-public-audit.yml"
+      - "*.html"
+      - "sitemap.xml"
+      - "robots.txt"
+  schedule:
+    - cron: "23 3 * * 1"
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-full-public-audit
+  cancel-in-progress: false
+jobs:
+  full-public-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Chromium for independent external audit
+        run: |
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Validate deployed language and intake JavaScript syntax
+        run: |
+          node --check i18n.js
+          node --check forms-intake.js
+          node --check forms.js
+      - name: Validate static audit logic against synthetic examples
+        run: python -m unittest discover -s scripts/tests -p 'test_full_public_audit.py' -v
+      - name: Capture every public page, browser console, links, SEO and mobile layout
+        id: audit
+        continue-on-error: true
+        run: python scripts/full_public_audit.py --output /tmp/nordbridge-full-audit
+      - name: Publish totals in run summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f /tmp/nordbridge-full-audit/report.md ]]; then
+            head -n 35 /tmp/nordbridge-full-audit/report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::No audit report produced"
+          fi
+      - name: Save screenshots + machine-readable and text reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nordbridge-public-screenshots-${{ github.run_id }}
+          path: /tmp/nordbridge-full-audit/
+          retention-days: 7
+          compression-level: 6
+          if-no-files-found: error
+      - name: Enforce audit completion
+        if: always()
+        shell: bash
+        env:
+          RESULT: ${{ steps.audit.outcome }}
+        run: |
+          if [[ "$RESULT" != success ]]; then
+            echo "::error::External browser audit did not complete successfully"
+            exit 1
+          fi

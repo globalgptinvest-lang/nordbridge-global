@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nordbridge-global.com/sitemap.xml
+Sitemap: https://www.nordbridge-global.com/sitemap.xml
