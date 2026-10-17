@@ -1,8 +1,7 @@
-# NordBridge single-source CRM integration gate
-# The legacy Airtable workflow is intentionally disabled.
-# Gmail -> monday.com writes require verified boards:write permission and a tested
-# idempotent integration. Do not silently switch CRM providers.
-name: NordBridge CRM integration gate
+# NordBridge canonical CRM integration gate.
+# The owner selected Airtable as the single source of truth 2026-10-17.
+# Do not process private Gmail/CRM records from this PUBLIC GitHub repository.
+name: NordBridge Airtable CRM readiness gate
 on:
   workflow_dispatch:
 permissions:
@@ -11,12 +10,15 @@ jobs:
   readiness:
     runs-on: ubuntu-latest
     steps:
-      - name: Explain integration prerequisites
+      - name: Describe permissions and go-live requirements
         shell: bash
         run: |
-          echo "## NordBridge CRM readiness" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Canonical CRM: monday.com GLOBAL DEAL ENGINE — Deal Registry (board 5103432319)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Gmail-to-CRM ingestion: NOT ENABLED; monday.com API create returned USER_UNAUTHORIZED on 2026-10-13." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Legacy Airtable writes: DISABLED." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Before enabling writes: verify boards:write, idempotency by Gmail message/thread IDs, duplicate prevention, least privilege, and audit logs." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Never log message bodies, personal data, credentials, or access tokens." >> "$GITHUB_STEP_SUMMARY"
+          echo '## NordBridge — canonical CRM: Airtable' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Private base: Global Deal Engine — Registry.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Website Leads and Billing & Payments tables were added 2026-10-17.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Existing live forms must keep working through FormSubmit until verified intake is enabled.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Vercel must have encrypted AIRTABLE_PERSONAL_ACCESS_TOKEN scoped minimally to the single base.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Cloudflare Turnstile site key and server secret must both be configured before routing new forms.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Verify real test: form -> Vercel handler -> single Airtable record -> success redirect, then rejection/replay and failure behavior.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- The public script never embeds secrets or customer data. No billing or payment automation is enabled here.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- monday.com is optional read-only or secondary display. Do not independently write new deal leads there.' >> "$GITHUB_STEP_SUMMARY"
