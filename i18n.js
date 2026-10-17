@@ -21,6 +21,36 @@ Object.assign(translations.ar,{
 "NordBridge operates under CVR 46768736.":"NordBridge مسجلة برقم CVR 46768736.",
 "Tender sourcing, bid-document support, procurement coordination, counterpart sourcing and business introductions.":"البحث عن المناقصات ودعم وثائق العطاءات وتنسيق المشتريات والبحث عن الشركاء والتعريف بالجهات التجارية."
 });
+
+/* Human-readable primary page labels added after sitewide localization QA.
+ * This covers visible H1 and SEO title. Long-form translation still requires
+ * qualified linguistic review and is not asserted by browser tests.
+ */
+Object.assign(translations.uk,{
+"Tender Support Services & Bid Preparation | NordBridge Denmark":"Тендерний супровід і підготовка пропозицій | NordBridge Данія",
+"Tender support and bid preparation for international procurement.":"Тендерний супровід і підготовка пропозицій для міжнародних закупівель.",
+"Strategic Projects & Global Procurement Mandates | NordBridge":"Стратегічні проєкти та міжнародні закупівельні мандати | NordBridge",
+"NordBridge Denmark Strategic Projects: global sourcing, procurement and project mandates.":"Стратегічні проєкти NordBridge Denmark: міжнародний пошук постачальників, закупівлі та проєктні мандати.",
+"Free Tender Compliance Checklist | Bid Submission Review | NordBridge":"Безкоштовний контрольний список тендерної відповідності | Перевірка пропозиції | NordBridge",
+"Tender compliance checklist before bid submission":"Контрольний список тендерної відповідності перед поданням пропозиції"
+});
+Object.assign(translations.da,{
+"Tender Support Services & Bid Preparation | NordBridge Denmark":"Udbudsstøtte og tilbudsudarbejdelse | NordBridge Danmark",
+"Tender support and bid preparation for international procurement.":"Udbudsstøtte og tilbudsudarbejdelse til internationale indkøb.",
+"Strategic Projects & Global Procurement Mandates | NordBridge":"Strategiske projekter og internationale indkøbsmandater | NordBridge",
+"NordBridge Denmark Strategic Projects: global sourcing, procurement and project mandates.":"NordBridge Danmarks strategiske projekter: global sourcing, indkøb og projektmandater.",
+"Free Tender Compliance Checklist | Bid Submission Review | NordBridge":"Gratis tjekliste til udbudsoverholdelse | Gennemgang af tilbud | NordBridge",
+"Tender compliance checklist before bid submission":"Tjekliste til udbudsoverholdelse før afgivelse af tilbud"
+});
+Object.assign(translations.ar,{
+"Tender Support Services & Bid Preparation | NordBridge Denmark":"دعم المناقصات وإعداد العطاءات | NordBridge الدنمارك",
+"Tender support and bid preparation for international procurement.":"دعم المناقصات وإعداد العطاءات للمشتريات الدولية.",
+"Strategic Projects & Global Procurement Mandates | NordBridge":"المشاريع الاستراتيجية وتفويضات المشتريات العالمية | NordBridge",
+"NordBridge Denmark Strategic Projects: global sourcing, procurement and project mandates.":"مشاريع NordBridge Denmark الاستراتيجية: التوريد العالمي والمشتريات وتفويضات المشاريع.",
+"Free Tender Compliance Checklist | Bid Submission Review | NordBridge":"قائمة تحقق مجانية للامتثال للمناقصات | مراجعة تقديم العطاء | NordBridge",
+"Tender compliance checklist before bid submission":"قائمة التحقق من الامتثال للمناقصة قبل تقديم العطاء"
+});
+
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
