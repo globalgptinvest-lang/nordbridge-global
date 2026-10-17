@@ -38,6 +38,11 @@ jobs:
         run: |
           python -m pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
+      - name: Validate deployed language and intake JavaScript syntax
+        run: |
+          node --check i18n.js
+          node --check forms-intake.js
+          node --check forms.js
       - name: Validate static audit logic against synthetic examples
         run: python -m unittest discover -s scripts/tests -p 'test_full_public_audit.py' -v
       - name: Capture every public page, browser console, links, SEO and mobile layout
