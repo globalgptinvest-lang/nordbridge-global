@@ -94,6 +94,10 @@ Object.assign(translations.ar,{
 "Case Studies | NordBridge Denmark":"دراسات حالة | NordBridge الدنمارك",
 "NordBridge case studies":"دراسات حالة NordBridge",
 });
+/* Accessible small-screen navigation labels. */
+Object.assign(translations.uk,{"Menu":"Меню","Open navigation menu":"Відкрити меню навігації","Close navigation menu":"Закрити меню навігації"});
+Object.assign(translations.da,{"Menu":"Menu","Open navigation menu":"Åbn navigationsmenu","Close navigation menu":"Luk navigationsmenu"});
+Object.assign(translations.ar,{"Menu":"القائمة","Open navigation menu":"فتح قائمة التنقل","Close navigation menu":"إغلاق قائمة التنقل"});
 const original=new WeakMap();
 const attrOriginal=new WeakMap();
 function tr(lang,text){
@@ -126,6 +130,13 @@ function setLang(lang,updateUrl=true){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
   walk(document.body,lang);
+  // The expanded/closed state is dynamic and must remain translated correctly.
+  const menu=document.querySelector(".mobile-nav-toggle");
+  if(menu){
+    menu.textContent=tr(lang,"Menu");
+    const label=menu.getAttribute("aria-expanded")==="true"?"Close navigation menu":"Open navigation menu";
+    menu.setAttribute("aria-label",tr(lang,label));
+  }
   translateHead(lang);
   try{localStorage.setItem("nordbridge-lang",lang);}catch(e){}
   document.querySelectorAll("[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
@@ -136,7 +147,42 @@ function setLang(lang,updateUrl=true){
     history.replaceState(null,"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")+u.hash);
   }
 }
+function setupMobileNav(){
+  const nav=document.querySelector("nav.nav");
+  const list=nav?.querySelector(".nav-inner");
+  if(!nav||!list||nav.querySelector(".mobile-nav-toggle")) return;
+  // Leave original links visible if script fails or is blocked.
+  if(!list.id) list.id="nb-main-navigation";
+  const toggle=document.createElement("button");
+  toggle.type="button";
+  toggle.className="mobile-nav-toggle";
+  toggle.setAttribute("aria-controls",list.id);
+  toggle.setAttribute("aria-expanded","false");
+  toggle.setAttribute("aria-label","Open navigation menu");
+  toggle.textContent="Menu";
+  nav.insertBefore(toggle,list);
+  nav.classList.add("has-mobile-menu");
+  function setOpen(open){
+    nav.classList.toggle("mobile-nav-open",open);
+    toggle.setAttribute("aria-expanded",String(open));
+    const lang=document.documentElement.lang||"en";
+    toggle.setAttribute("aria-label",tr(lang,open?"Close navigation menu":"Open navigation menu"));
+  }
+  toggle.addEventListener("click",()=>setOpen(toggle.getAttribute("aria-expanded")!=="true"));
+  list.addEventListener("click",event=>{
+    if(event.target.closest("a[href]")) setOpen(false);
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&toggle.getAttribute("aria-expanded")==="true"){
+      setOpen(false);toggle.focus();
+    }
+  });
+  window.addEventListener("resize",()=>{
+    if(window.innerWidth>540&&toggle.getAttribute("aria-expanded")==="true") setOpen(false);
+  });
+}
 function init(){
+  setupMobileNav();
   if(!document.querySelector("[data-lang]")){
     const box=document.createElement("div");
     box.className="language-switcher floating-language";
