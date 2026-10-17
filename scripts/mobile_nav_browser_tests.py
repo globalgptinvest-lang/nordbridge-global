@@ -39,6 +39,8 @@ async def inspect_mobile(browser, path):
         await page.locator(".language-switcher [data-lang='ar']").first.click()
         assert (await toggle.text_content()).strip() == "القائمة", "Arabic menu label missing"
         assert await page.locator("html").get_attribute("dir") == "rtl", "RTL missing"
+        overflow = await page.evaluate("() => document.documentElement.scrollWidth - visualViewport.width")
+        assert overflow <= 14, f"RTL viewport expands horizontally: {overflow}px"
 
         layout = await page.evaluate("""() => {
           const el=document.querySelector('nav.nav .mobile-nav-toggle');
