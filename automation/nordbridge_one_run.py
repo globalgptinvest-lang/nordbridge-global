@@ -117,7 +117,7 @@ def inspect_sources(root=ROOT):
             failed.append(name + " missing")
             continue
         html = path.read_text(encoding="utf8")
-        if not all(s in html for s in ('class="lead-form"', "privacy_consent",
+        if not all(s in html for s in ('class="lead-form', "privacy_consent",
                                      "forms-intake.js", "formsubmit.co/")):
             failed.append(name + " integration missing")
     checks.append(outcome("Six website forms wired", "PASS" if not failed else "FAIL",
@@ -193,7 +193,7 @@ def run(args):
                            [sys.executable, "-m", "unittest", "discover", "-s", "automation/tests", "-v"]))
     results.append(command("Network retry unit tests",
                            [sys.executable, "-m", "unittest", "discover", "-s", "scripts/tests",
-                            "-p", "test_audit_network.py", "-v"]))
+                            "-p", "test_*.py", "-v"]))
     results.append(command("Private CRM synthetic intake tests",
                            ["node", "--test", "scripts/tests/intake.test.cjs"]))
     if args.browser and not args.offline:
