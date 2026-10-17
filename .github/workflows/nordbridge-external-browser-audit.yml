@@ -1,10 +1,17 @@
 name: NordBridge external browser audit
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/nordbridge-external-browser-audit.yml"
   push:
+    branches: [main]
     paths:
       - "**/*.html"
       - "sitemap.xml"
+      - "scripts/audit_network.py"
+      - "scripts/tests/**"
       - "scripts/external_browser_audit.py"
       - "scripts/calculator_browser_tests.py"
       - "scripts/translation_browser_tests.py"
@@ -26,9 +33,37 @@ jobs:
         run: |
           python -m pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
+      - name: Offline bounded-retry regression tests
+        run: python -m unittest discover -s scripts/tests -p "test_audit_network.py" -v
       - name: Audit public site in desktop and mobile browsers
+        id: browser
+        continue-on-error: true
         run: python scripts/external_browser_audit.py
       - name: Test public calculators without submitting forms
+        id: calculator
+        if: always()
+        continue-on-error: true
         run: python scripts/calculator_browser_tests.py
       - name: Verify four-language financing page switcher
+        id: translation
+        if: always()
+        continue-on-error: true
         run: python scripts/translation_browser_tests.py
+      - name: Enforce full result and write readable summary
+        if: always()
+        shell: bash
+        env:
+          BROWSER: ${{ steps.browser.outcome }}
+          CALCULATOR: ${{ steps.calculator.outcome }}
+          TRANSLATION: ${{ steps.translation.outcome }}
+        run: |
+          echo "### NordBridge public browser health" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Site pages and responsive layout | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Financing calculators | $CALCULATOR |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| EN/UK/DA/AR language switcher | $TRANSLATION |" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$BROWSER" != success || "$CALCULATOR" != success || "$TRANSLATION" != success ]]; then
+            echo "::error::One or more public-site checks failed; inspect individual logs"
+            exit 1
+          fi
