@@ -45,18 +45,31 @@ READY_FOR_HUMAN_REVIEW means only that records passed basic automated checks. It
 
 Before lawful personalized outreach, review corporate sources, real needs, business email validity, opt-outs, duplicates in Gmail SENT/INBOX/SPAM, and CRM by domain/email/tender/deal ID. Do not resend to hard-bounced addresses or bypass sender limits. Confirm SENT only with provider message ID; DELIVERED only with delivery evidence.
 
-## Intake and payment blockers that cannot safely be switched on automatically
+## Canonical Airtable CRM and protected intake (verified 2026-10-17)
 
-The website is currently static GitHub Pages. The live forms submit to FormSubmit, which does NOT currently create Airtable/monday records. The pre-existing workflow nordbridge-crm-intake.yml deliberately does not write to CRM because an earlier monday.com call failed with USER_UNAUTHORIZED. Do not silently switch CRM providers or embed API tokens in browser code or a public repository.
+Airtable **Global Deal Engine — Registry** is the canonical NordBridge CRM, not monday.com. The live www domain now points at Vercel (after migration from GitHub Pages). The six business forms retain their FormSubmit fallback but enhance to Vercel `/api/lead` once Turnstile and private Airtable credentials are configured. Vercel `/api/intake-status` only exposes boolean readiness and the public Turnstile site key. Do not store CRM tokens in public GitHub Actions.
 
-To complete end-to-end CRM integration:
-1. Authorize a least-privilege private CRM writer and choose one authoritative CRM (monday or Airtable).
-2. Build a server-side authenticated webhook or permitted Gmail parser with replay protection and idempotent upsert by Deal ID, source event ID, company/email and tender reference.
-3. Implement compliance/privacy, anti-spam, signed request authentication, event logs, error/retry queue and duplicate checks.
-4. Test a synthetic authorized site enquiry: form submitted, provider confirms receipt, exactly one CRM record appears, notification received and repeated webhook cannot duplicate it.
-5. Only after these tests, change the production website forms or integrations.
+One **actual synthetic website form submission** was confirmed in the private Airtable Website Leads table on 2026-10-17, with one lead record and no duplicate at inspection time. This does not guarantee every future live submission or concurrent-replay behavior; Airtable does not provide an atomic unique constraint. Monitor duplicate IDs privately, respect data privacy, and investigate intake 5xx alerts.
 
-Stripe Live payouts were reported enabled on 17 October, but the public buy.stripe.com links have NOT been reconciled to the accessible Live account. This patch does not alter those links, payment pricing, bank details or legal terms.
+Invoice/payment state is private. The public website contains legacy `buy.stripe.com` checkout links; ownership is **NOT VERIFIED** against the connected Stripe Live account (its payment link list was empty on 2026-10-17). Do not create replacement links, change beneficiary data, claim invoice paid or offer automatic charging until account ownership and an actual payment are verified.
+
+## ONE RUN — single command public-safe operation
+
+GitHub Actions: **NordBridge ONE RUN — operations audit** → **Run workflow**. It also runs once on changes to its own workflow/source (PR and main), but adds **no new hourly schedule** to existing monitors.
+
+The single command performs HTTP/HTTPS and CRM readiness checks, examines six forms and source-level security guards, counts public Stripe links, runs automated source/unit tests, validates desktop/mobile browser flows (when Playwright is installed), scans EU TED and UK Find a Tender official public notices using the existing dedupe cache, and produces one Markdown/JSON report:
+
+~~~sh
+python3 automation/nordbridge_one_run.py --browser \
+  --state /tmp/nordbridge-state.json \
+  --output /tmp/nordbridge-one-run.json \
+  --summary /tmp/nordbridge-one-run.md \
+  --public-report /tmp/nordbridge-public-report.json
+~~~
+
+For static/unit-test checks only: `python3 automation/nordbridge_one_run.py --offline`.
+
+**Not automated by this public workflow:** private Gmail, real replies, client qualification/consent, Airtable content/transactions, invoices, private Stripe payments, bank changes, outgoing letters or bids. Those require separate authenticated **private** app checks and/or an explicit approved transaction. Public readiness never proves a signed contract or confirmed payment.
 
 ## Testing and operation
 
