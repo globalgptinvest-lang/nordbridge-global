@@ -69,7 +69,7 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         try:
-            for path in ("/", "/services.html", "/contact.html"):
+            for path in ("/", "/about.html", "/contact.html"):
                 await inspect_mobile(browser, path)
             await inspect_desktop(browser)
         finally:
