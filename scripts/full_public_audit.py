@@ -326,6 +326,10 @@ async def inspect(args):
                f"{report['severity_counts'].get('error',0)} errors and "
                f"{report['severity_counts'].get('warning',0)} warnings")
     print(summary)
+    for finding in findings[:100]:
+        print("FINDING:", finding["severity"], finding["code"], finding["path"], finding["detail"])
+    if len(findings) > 100:
+        print("FINDING: remaining", len(findings)-100, "see report.json artifact")
     print("Evidence directory:", out)
     if args.strict and report["severity_counts"].get("error", 0):
         return 1
