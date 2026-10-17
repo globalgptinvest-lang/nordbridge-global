@@ -3,10 +3,11 @@
 Read-only: no form submission, no payment checkout, no CRM writing.
 """
 import asyncio
+import os
 from playwright.async_api import async_playwright
 from audit_network import goto_with_retry
 
-BASE = "https://www.nordbridge-global.com"
+BASE = os.getenv("NORDBRIDGE_TEST_BASE", "https://www.nordbridge-global.com").rstrip("/")
 
 
 async def inspect_mobile(browser, path):
