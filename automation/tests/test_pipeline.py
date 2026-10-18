@@ -14,11 +14,12 @@ NOW = dt.datetime(2026, 10, 17, 9, 0, tzinfo=dt.timezone.utc)
 class SourceTests(unittest.TestCase):
     def test_rotating_queries_cover_all_sectors(self):
         all_topics = []
-        for hour in (0, 1, 2):
+        for hour in range(6):
             all_topics += [label for label, _ in monitor.rotating_ted_queries(NOW.replace(hour=hour))]
         self.assertEqual(len(all_topics), len(set(all_topics)))
         self.assertEqual(len(all_topics), len(monitor.TOPICS))
-        self.assertGreaterEqual(len(all_topics), 9)
+        self.assertEqual(len(all_topics), 36)
+        self.assertEqual(len(monitor.rotating_ted_queries(NOW)), 6)
 
     def test_ted_notice_is_source_only_no_guessed_value(self):
         x = monitor.parse_ted_notice({
@@ -54,6 +55,48 @@ class SourceTests(unittest.TestCase):
             self.assertIn("updatedFrom=", request)
             self.assertTrue(request.startswith(monitor.UK_API))
 
+
+    def test_prozorro_active_tender_and_closed_filters(self):
+        synthetic = {
+            "data": {"tenderID": "UA-2026-10-18-123456-a",
+                     "status": "active.tendering", "title": "Медичне обладнання",
+                     "procuringEntity": {"name": "Synthetic UA hospital"},
+                     "tenderPeriod": {"endDate": "2026-10-30T12:00:00+02:00"},
+                     "value": {"amount": 2000000, "currency": "UAH"}}
+        }
+        item = monitor.parse_prozorro_tender(synthetic, NOW)
+        self.assertEqual(item["id"], "UA:UA-2026-10-18-123456-a")
+        self.assertEqual(item["currency"], "UAH")
+        self.assertEqual(item["value"], 2000000)
+        self.assertEqual(item["source"], "Ukraine Prozorro")
+        closed = {"data": {**synthetic["data"], "status": "complete"}}
+        self.assertIsNone(monitor.parse_prozorro_tender(closed, NOW))
+        no_id = {"data": {**synthetic["data"], "tenderID": "not a tender"}}
+        self.assertIsNone(monitor.parse_prozorro_tender(no_id, NOW))
+        expired = {"data": {**synthetic["data"], "tenderPeriod": {"endDate": "2026-10-01T12:00:00Z"}}}
+        self.assertIsNone(monitor.parse_prozorro_tender(expired, NOW))
+
+    def test_prozorro_api_calls_are_bounded(self):
+        synthetic = {"data": {"tenderID": "UA-2026-10-18-123456-a",
+                               "status": "active.tendering", "title": "Bridge engineering"}}
+        feed = {"data": [{"id": ("%032x" % k)} for k in range(1, 41)]}
+        def fake_http(url, **kwargs):
+            if "descending=" in url:
+                return feed
+            return synthetic
+        with patch.object(monitor, "http_json", side_effect=fake_http) as http:
+            items = monitor.query_prozorro(NOW)
+            self.assertEqual(len(items), 4)
+            self.assertLessEqual(http.call_count, 9)
+            self.assertTrue(http.call_args_list[0].args[0].startswith(monitor.PROZORRO_API))
+            self.assertIn("descending=1", http.call_args_list[0].args[0])
+
+    def test_prozorro_distinct_from_other_source_ids(self):
+        p = monitor.parse_prozorro_tender({"data": {"tenderID": "UA-2026-10-18-123456-a",
+            "status": "active.enquiries", "title": "Logistics"}})
+        self.assertTrue(p["id"].startswith("UA:"))
+        self.assertNotEqual(p["id"], "UK:123456-2026")
+
     def test_first_scan_baselines_and_next_scan_deduplicates(self):
         first = monitor.rank_notice(monitor.parse_ted_notice({"publication-number": "012345-2026", "notice-title": "Bridge engineering"}))
         second = monitor.rank_notice(monitor.parse_uk_release({
@@ -61,13 +104,13 @@ class SourceTests(unittest.TestCase):
         }, NOW))
         with tempfile.TemporaryDirectory() as temp:
             p = Path(temp)
-            with patch.object(monitor, "query_ted", return_value=[first]), patch.object(monitor, "query_uk", return_value=[]):
+            with patch.object(monitor, "query_ted", return_value=[first]), patch.object(monitor, "query_uk", return_value=[]), patch.object(monitor, "query_prozorro", return_value=[]):
                 code = monitor.run_monitor(p / "report.json", p / "state.json", NOW, website_checker=lambda: {"ok": True})
                 self.assertEqual(code, 0)
                 a = json.loads((p / "report.json").read_text())
                 self.assertTrue(a["first_run"])
                 self.assertEqual(a["new"], [])
-            with patch.object(monitor, "query_ted", return_value=[first]), patch.object(monitor, "query_uk", return_value=[second]):
+            with patch.object(monitor, "query_ted", return_value=[first]), patch.object(monitor, "query_uk", return_value=[second]), patch.object(monitor, "query_prozorro", return_value=[]):
                 code = monitor.run_monitor(p / "report.json", p / "state.json", NOW, website_checker=lambda: {"ok": True})
                 self.assertEqual(code, 0)
                 b = json.loads((p / "report.json").read_text())
@@ -88,11 +131,11 @@ class SourceTests(unittest.TestCase):
     def test_source_partial_vs_total_failure(self):
         with tempfile.TemporaryDirectory() as temp:
             p = Path(temp)
-            with patch.object(monitor, "query_ted", side_effect=RuntimeError("429")), patch.object(monitor, "query_uk", return_value=[]):
+            with patch.object(monitor, "query_ted", side_effect=RuntimeError("429")), patch.object(monitor, "query_uk", return_value=[]), patch.object(monitor, "query_prozorro", return_value=[]):
                 self.assertEqual(monitor.run_monitor(p / "report.json", p / "state.json", NOW, website_checker=lambda: {"ok": True}), 0)
                 r = json.loads((p / "report.json").read_text())
                 self.assertTrue(r["partial"])
-            with patch.object(monitor, "query_ted", side_effect=RuntimeError("429")), patch.object(monitor, "query_uk", side_effect=RuntimeError("503")):
+            with patch.object(monitor, "query_ted", side_effect=RuntimeError("429")), patch.object(monitor, "query_uk", side_effect=RuntimeError("503")), patch.object(monitor, "query_prozorro", side_effect=RuntimeError("429")):
                 self.assertEqual(monitor.run_monitor(p / "report.json", p / "state.json", NOW, website_checker=lambda: {"ok": True}), 1)
 
 class LeadTests(unittest.TestCase):
