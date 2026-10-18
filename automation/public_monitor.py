@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only public procurement discovery: EU TED and UK Find a Tender.
+"""Read-only public procurement discovery: EU TED, UK Find a Tender and Ukraine Prozorro.
 
 No authenticated APIs, emailing, personal records or automatic qualification.
 All notices remain unverified leads until source documents have been reviewed.
@@ -17,23 +17,57 @@ import urllib.request
 
 TED_API = "https://api.ted.europa.eu/v3/notices/search"
 UK_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
+PROZORRO_API = "https://public-api.prozorro.gov.ua/api/2.5/tenders"
 SITE = "https://nordbridge-global.com/"
-# A rotating set of three searches avoids hammering TED each hour.
+# Six bounded queries each hour cover 36 sectors in a six-hour rotation.
+# Do not infer that tender sources outside the EU/UK/UA are covered by this scanner.
+TOPICS_PER_RUN = 6
 TOPICS = [
-    ('freight', 'FT~"freight"'),
-    ('logistics', 'FT~"logistics"'),
-    ('industrial equipment', 'FT~"industrial equipment"'),
-    ('engineering services', 'FT~"engineering services"'),
-    ('renewable energy', 'FT~"renewable energy"'),
-    ('bridge design', 'FT~"bridge design"'),
-    ('business development', 'FT~"business development"'),
-    ('consultancy services', 'FT~"consultancy services"'),
-    ('water infrastructure', 'FT~"water infrastructure"'),
+    ("freight", "FT~\"freight\""),
+    ("logistics", "FT~\"logistics\""),
+    ("industrial equipment", "FT~\"industrial equipment\""),
+    ("engineering services", "FT~\"engineering services\""),
+    ("renewable energy", "FT~\"renewable energy\""),
+    ("bridge design", "FT~\"bridge design\""),
+    ("business development", "FT~\"business development\""),
+    ("consultancy services", "FT~\"consultancy services\""),
+    ("water infrastructure", "FT~\"water infrastructure\""),
+    ("freight forwarding", "FT~\"freight forwarding\""),
+    ("warehouse services", "FT~\"warehouse services\""),
+    ("customs clearance", "FT~\"customs clearance\""),
+    ("port services", "FT~\"port services\""),
+    ("rail transport", "FT~\"rail transport\""),
+    ("airport equipment", "FT~\"airport equipment\""),
+    ("heavy machinery", "FT~\"heavy machinery\""),
+    ("hydraulic systems", "FT~\"hydraulic systems\""),
+    ("welding services", "FT~\"welding services\""),
+    ("steel structures", "FT~\"steel structures\""),
+    ("data center", "FT~\"data center\""),
+    ("cybersecurity", "FT~\"cybersecurity\""),
+    ("IT infrastructure", "FT~\"IT infrastructure\""),
+    ("server equipment", "FT~\"server equipment\""),
+    ("battery storage", "FT~\"battery storage\""),
+    ("electric grid", "FT~\"electric grid\""),
+    ("solar panels", "FT~\"solar panels\""),
+    ("wind power", "FT~\"wind power\""),
+    ("water treatment", "FT~\"water treatment\""),
+    ("wastewater management", "FT~\"wastewater management\""),
+    ("waste management", "FT~\"waste management\""),
+    ("road construction", "FT~\"road construction\""),
+    ("construction supervision", "FT~\"construction supervision\""),
+    ("medical equipment", "FT~\"medical equipment\""),
+    ("humanitarian supplies", "FT~\"humanitarian supplies\""),
+    ("food security", "FT~\"food security\""),
+    ("feasibility study", "FT~\"feasibility study\""),
 ]
-MAX_IDS = 2500
+MAX_IDS = 6000
 RELEVANT = ("freight", "logistic", "industrial", "engineer", "renewable",
             "solar", "bridge", "construction", "consult", "development",
-            "agricultur", "warehous", "storage", "water", "transport")
+            "agricultur", "warehous", "storage", "water", "transport",
+            "customs", "port", "rail", "airport", "hydraulic", "weld", "steel",
+            "cyber", "battery", "grid", "waste", "food security", "medical",
+            "будівниц", "енерг", "логіст", "транспорт", "обладнан", "проєктуван",
+            "консультац", "медич", "інфраструктур", "водопостачан")
 
 def now_utc():
     return dt.datetime.now(dt.timezone.utc)
@@ -97,8 +131,9 @@ def parse_ted_notice(raw):
 
 def rotating_ted_queries(at=None):
     moment = at or now_utc()
-    offset = (moment.hour % 3) * 3
-    return TOPICS[offset:offset + 3]
+    cycles = (len(TOPICS) + TOPICS_PER_RUN - 1) // TOPICS_PER_RUN
+    offset = (moment.hour % cycles) * TOPICS_PER_RUN
+    return TOPICS[offset:offset + TOPICS_PER_RUN]
 
 def query_ted(term, today=None):
     day = today or now_utc().date()
@@ -163,6 +198,66 @@ def query_uk(today=None):
         raise ValueError("UK OCDS response missing releases array")
     return [n for rel in body["releases"] if (n := parse_uk_release(rel, day))]
 
+
+def parse_prozorro_tender(raw, today=None):
+    """Only active public tenders with authentic UA IDs; amounts retain source currency."""
+    data = raw.get("data", raw) if isinstance(raw, dict) else None
+    if not isinstance(data, dict):
+        return None
+    identifier = _text(data.get("tenderID"))
+    if not re.fullmatch(r"UA-\\d{4}-\\d{2}-\\d{2}-\\d{6}-[a-z]", identifier):
+        return None
+    if data.get("status") not in ("active.enquiries", "active.tendering", "active.pre-qualification"):
+        return None
+    title = _text(data.get("title"), "")
+    if not title:
+        return None
+    period = data.get("tenderPeriod") or {}
+    if not isinstance(period, dict):
+        period = {}
+    deadline, parsed = _deadline(period.get("endDate"))
+    if parsed and parsed < (today or now_utc()):
+        return None
+    value_data = data.get("value") or {}
+    amount = value_data.get("amount") if isinstance(value_data, dict) else None
+    currency = value_data.get("currency") if isinstance(value_data, dict) else None
+    if not isinstance(amount, (int, float)) or isinstance(amount, bool) or amount < 0:
+        amount, currency = None, None
+    buyer_data = data.get("procuringEntity") or {}
+    buyer = _text(buyer_data.get("name"), "Unverified buyer") if isinstance(buyer_data, dict) else "Unverified buyer"
+    return {"id": "UA:" + identifier, "title": title[:250], "buyer": buyer[:150],
+            "url": "https://prozorro.gov.ua/tender/" + identifier, "source": "Ukraine Prozorro",
+            "deadline": deadline, "value": amount, "currency": currency if amount is not None else None,
+            "verification": "Confirm active tender, full requirements, buyer and foreign bidder eligibility at official source."}
+
+def query_prozorro(today=None):
+    """Bounded official public API reads: one reverse feed page, at most eight details."""
+    current = today or now_utc()
+    params = urllib.parse.urlencode({"descending": "1", "limit": 40, "opt_fields": "status"})
+    feed = http_json(PROZORRO_API + "?" + params, timeout=12)
+    rows = feed.get("data") if isinstance(feed, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("Prozorro response missing data array")
+    found = []
+    requests = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        uid = row.get("id")
+        if not isinstance(uid, str) or not re.fullmatch(r"[0-9a-f]{32}", uid):
+            continue
+        state = row.get("status")
+        if state is not None and state not in ("active.enquiries", "active.tendering", "active.pre-qualification"):
+            continue
+        if requests >= 8 or len(found) >= 4:
+            break
+        requests += 1
+        detail = http_json(PROZORRO_API + "/" + uid, timeout=12)
+        item = parse_prozorro_tender(detail, current)
+        if item is not None:
+            found.append(item)
+    return found
+
 def rank_notice(notice):
     """Internal triage signal only: never claim a tender qualifies based on score."""
     title = notice["title"].casefold()
@@ -188,7 +283,7 @@ def safe_summary(report):
     lines = ["## NordBridge — verified-source procurement scan", "",
              f"Checked: {report['checked_at']}",
              f"Website: {'OK' if report['site']['ok'] else 'CHECK NEEDED'}",
-             f"Official sources queried: TED ({checks['ted_ok']}/{checks['ted_total']} rotating topics); UK Find a Tender ({checks['uk_ok']}/1)",
+             f"Official sources queried: TED ({checks['ted_ok']}/{checks['ted_total']} rotating topics); UK ({checks['uk_ok']}/1); Ukraine Prozorro ({checks['prozorro_ok']}/1)",
              f"Distinct notice candidates: {report['total_checked']}",
              f"First observed by this monitor: {len(report['new'])}", "",
              "Every result is an **unverified opportunity**. No claim of bidder eligibility, contract size, closing date or award."]
@@ -227,6 +322,13 @@ def run_monitor(output, state_path, moment=None, website_checker=check_website):
         uk_ok = 1
     except Exception as exc:
         errors.append(f"UK OCDS: {type(exc).__name__}: {str(exc)[:140]}")
+    prozorro_ok = 0
+    try:
+        for notice in query_prozorro(moment):
+            found[notice["id"]] = rank_notice(notice)
+        prozorro_ok = 1
+    except Exception as exc:
+        errors.append(f"Ukraine Prozorro: {type(exc).__name__}: {str(exc)[:140]}")
     incoming = set(found)
     new = [] if first else [found[x] for x in (incoming - prior)]
     new.sort(key=lambda x: (-x["triage_score"], x["id"]))
@@ -238,8 +340,8 @@ def run_monitor(output, state_path, moment=None, website_checker=check_website):
         "checked_at": moment.isoformat(), "site": site,
         "first_run": first, "partial": bool(errors),
         "total_checked": len(found), "new": new, "errors": errors,
-        "sources_checked": {"ted_ok": ted_ok, "ted_total": len(topics), "uk_ok": uk_ok},
-        "sources": ["EU TED Search API", "UK Find a Tender OCDS release API"],
+        "sources_checked": {"ted_ok": ted_ok, "ted_total": len(topics), "uk_ok": uk_ok, "prozorro_ok": prozorro_ok},
+        "sources": ["EU TED Search API", "UK Find a Tender OCDS release API", "Ukraine Prozorro public API"],
         "outreach_sent": 0, "automatic_crm_writes": 0
     }
     Path(output).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf8")
@@ -248,7 +350,7 @@ def run_monitor(output, state_path, moment=None, website_checker=check_website):
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf8") as handle:
             handle.write(summary)
-    if not site["ok"] or ted_ok + uk_ok == 0:
+    if not site["ok"] or ted_ok + uk_ok + prozorro_ok == 0:
         print("Critical failure: site unreachable or all sources failed.", file=sys.stderr)
         return 1
     return 0
