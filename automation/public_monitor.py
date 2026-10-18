@@ -205,7 +205,7 @@ def parse_prozorro_tender(raw, today=None):
     if not isinstance(data, dict):
         return None
     identifier = _text(data.get("tenderID"))
-    if not re.fullmatch(r"UA-\\d{4}-\\d{2}-\\d{2}-\\d{6}-[a-z]", identifier):
+    if not re.fullmatch(r"UA-\d{4}-\d{2}-\d{2}-\d{6}-[a-z]", identifier):
         return None
     if data.get("status") not in ("active.enquiries", "active.tendering", "active.pre-qualification"):
         return None
