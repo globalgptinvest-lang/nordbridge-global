@@ -16,7 +16,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Restore public-only dedupe state
@@ -26,7 +26,7 @@ jobs:
           key: public-monitor-${{ github.run_id }}
           restore-keys: |
             public-monitor-
-      - name: Scan official public TED notices and site
+      - name: Scan public EU TED, UK and Ukraine procurement notices plus site
         env:
           NORDBRIDGE_STATE: /tmp/nordbridge-state.json
           NORDBRIDGE_REPORT: /tmp/nordbridge-report.json
