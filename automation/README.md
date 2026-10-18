@@ -2,13 +2,15 @@
 
 ## Public monitor (active only after merging)
 
-The hourly read-only GitHub workflow **nordbridge-public-monitor.yml** checks the website and searches official **EU TED** and **UK Find a Tender** procurement notices.
+The hourly read-only GitHub workflow **nordbridge-public-monitor.yml** checks the website and searches official **EU TED**, **UK Find a Tender**, and **Ukraine Prozorro public API** procurement notices.
 
-- TED: nine relevant sectors, three searches each hourly run, completing the rotation in three hours. https://docs.ted.europa.eu/api/latest/search.html
+- TED: 36 industry topics spanning infrastructure, logistics, industrial supplies, IT, energy, humanitarian procurement and consulting. Six bounded searches per hourly run, completing the rotation in six hours. https://docs.ted.europa.eu/api/latest/search.html
 - UK: read-only OCDS Release Packages endpoint, filtering recent tender-stage notices: https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages
+- Ukraine: official Prozorro public feed with `descending=1`, a page of up to 40 updated tenders, up to 8 detail reads and **at most 4 active opportunity candidates per hourly run**. UA ID, title, status, buyer, amount/currency and deadline must come from source detail. https://prozorro-api-docs.readthedocs.io/en/master/basic-actions/feed.html
+- World Bank public procurement data, UNGM, national tender portals across Africa/Asia/Americas, private supplier networks and financing leads are **not yet included** in this GitHub runner. They require independently verified APIs or private workflows; links to public portals are not evidence of active API integration.
 - UNGM: the official Notices API requires authorization; it has not been connected. https://developer.ungm.org/Article/GetNotices
 
-Temporary source failures, HTTP 429/503 and incomplete runs are explicitly reported. Notices from different sources use source-prefixed IDs to avoid collisions. Prior IDs are retained when only some sources succeed. Expired UK notices with a known UTC deadline are excluded. UK GBP values remain GBP, not guessed EUR. Every opportunity still requires human verification of actual budget, deadline, eligibility, completeness and buyer requirements. No private or confidential tender claims.
+Temporary source failures, HTTP 429/503 and incomplete runs are explicitly reported. Notices from different sources use source-prefixed IDs to avoid collisions. Prior IDs are retained when only some sources succeed. Expired UK notices with a known UTC deadline are excluded. UK GBP and Ukraine UAH values remain in their original currencies, not guessed EUR. Every opportunity still requires human verification of actual budget, deadline, eligibility, completeness and buyer requirements. No private or confidential tender claims.
 
 No emails, bids, signed contracts, Stripe payments or CRM writes run in this public workflow. GitHub caches and artifacts only contain public notice titles and links; never add private company/contact records.
 
@@ -57,7 +59,7 @@ Invoice/payment state is private. The public website contains legacy `buy.stripe
 
 GitHub Actions: **NordBridge ONE RUN — operations audit** → **Run workflow**. It also runs once on changes to its own workflow/source (PR and main), but adds **no new hourly schedule** to existing monitors.
 
-The single command performs HTTP/HTTPS and CRM readiness checks, examines six forms and source-level security guards, counts public Stripe links, runs automated source/unit tests, validates desktop/mobile browser flows (when Playwright is installed), scans EU TED and UK Find a Tender official public notices using the existing dedupe cache, and produces one Markdown/JSON report:
+The single command performs HTTP/HTTPS and CRM readiness checks, examines six forms and source-level security guards, counts public Stripe links, runs automated source/unit tests, validates desktop/mobile browser flows (when Playwright is installed), scans EU TED, UK Find a Tender and the bounded official Ukraine Prozorro public API using the existing dedupe cache, and produces one Markdown/JSON report:
 
 ~~~sh
 python3 automation/nordbridge_one_run.py --browser \
