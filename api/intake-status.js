@@ -6,7 +6,13 @@ module.exports = (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method !== 'GET') return res.status(405).json({ready:false});
   const key = (process.env.TURNSTILE_SITE_KEY || '').trim();
-  const ready = Boolean(process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN &&
-    process.env.TURNSTILE_SECRET_KEY && /^[0-9A-Za-z_-]{8,120}$/.test(key));
+  const url = process.env.NORDBRIDGE_CRM_API_URL;
+  const token = process.env.NORDBRIDGE_CRM_API_TOKEN;
+  const serverMode = Boolean(url || token);
+  const allowedHost = /^https:\/\/(crm|office)\.nordbridge-global\.com\/?$/.test(url || '');
+  const providerReady = serverMode ? Boolean(allowedHost && token && token.length >= 32) :
+    Boolean(process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN);
+  const ready = Boolean(providerReady && process.env.TURNSTILE_SECRET_KEY &&
+    /^[0-9A-Za-z_-]{8,120}$/.test(key));
   return res.status(200).json({ready, ...(ready ? {sitekey:key} : {})});
 };
