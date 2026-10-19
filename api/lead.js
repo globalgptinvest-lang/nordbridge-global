@@ -75,6 +75,45 @@ async function airtable(path, token, options={}) {
     return await r.json();
   } finally {clearTimeout(abort);}
 }
+
+function isApprovedCrmUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' &&
+      /^(crm|office)\.nordbridge-global\.com$/.test(url.hostname) &&
+      !url.port && (url.pathname === '/' || url.pathname === '') &&
+      !url.username && !url.password && !url.search && !url.hash;
+  } catch (_) {return false;}
+}
+async function serverCrm(fields, endpoint, token) {
+  if (!isApprovedCrmUrl(endpoint) || typeof token !== 'string' || token.length < 32) {
+    throw new Error('server_crm_not_ready');
+  }
+  const payload = {
+    lead_id: fields['Lead ID'],
+    company: fields.Company,
+    email: fields.Email,
+    country: fields.Country,
+    source_form: fields['Source Form'],
+    service: fields.Service,
+    source_page: fields['Source Page'],
+    privacy_consent: fields['Privacy Consent']
+  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8500);
+  try {
+    const response = await fetch(new URL('/v1/website-leads', endpoint), {
+      method:'POST', signal:controller.signal,
+      headers: {'Authorization':'Bearer '+token, 'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!response.ok) throw new Error('server_crm_'+response.status);
+    const receipt = await response.json();
+    if(receipt.lead_id!==payload.lead_id) throw new Error('server_crm_bad_receipt');
+    return receipt;
+  } finally {clearTimeout(timer);}
+}
+
 async function validateTurnstile(secret,response,ip) {
   if(!response || response.length>2500) return false;
   const params=new URLSearchParams({secret,response});
@@ -102,7 +141,10 @@ async function handler(req,res) {
   if(req.method!=='POST') return res.status(405).send('Method not allowed');
   if(!ALLOWED_ORIGINS.has(String(req.headers.origin||''))) return failure(res,403);
   const token=process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN, secret=process.env.TURNSTILE_SECRET_KEY;
-  if(!token || !secret || !process.env.TURNSTILE_SITE_KEY) return failure(res,503);
+  const crmUrl=process.env.NORDBRIDGE_CRM_API_URL, crmToken=process.env.NORDBRIDGE_CRM_API_TOKEN;
+  const serverMode=Boolean(crmUrl || crmToken);
+  if(!secret || !process.env.TURNSTILE_SITE_KEY ||
+    (serverMode ? (!isApprovedCrmUrl(crmUrl) || !crmToken || crmToken.length<32) : !token)) return failure(res,503);
   if(Number(req.headers['content-length']||0)>MAX_BYTES) return failure(res,413);
   let body,fields;
   try {body=parseBody(req); fields=normalizedLead(body);}
@@ -112,13 +154,18 @@ async function handler(req,res) {
     const challenge=clean(body['cf-turnstile-response'],2500);
     const ip=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();
     if(!await validateTurnstile(secret,challenge,ip)) return failure(res,403);
-    // Best-effort replay check. Airtable lacks an atomic unique constraint:
-    // duplicates must also be reviewed in private CRM.
-    const formula='{Lead ID}="'+fields['Lead ID']+'"';
-    const params=new URLSearchParams({maxRecords:'1',filterByFormula:formula});
-    const existing=await airtable('?'+params.toString(),token);
-    if(!existing.records?.length) {
-      await airtable('',token,{method:'POST',body:JSON.stringify({records:[{fields}]})});
+    if(serverMode) {
+      // Atomic duplicate suppression on VPS PostgreSQL by lead_id.
+      // Never fall back to Airtable if the explicitly selected server is failing.
+      await serverCrm(fields,crmUrl,crmToken);
+    } else {
+      // Legacy Airtable fallback remains until the staged VPS cutover succeeds.
+      const formula='{Lead ID}="'+fields['Lead ID']+'"';
+      const params=new URLSearchParams({maxRecords:'1',filterByFormula:formula});
+      const existing=await airtable('?'+params.toString(),token);
+      if(!existing.records?.length) {
+        await airtable('',token,{method:'POST',body:JSON.stringify({records:[{fields}]})});
+      }
     }
     res.setHeader('Location',
       'https://nordbridge-global.com/thanks.html?submission='+encodeURIComponent(fields['Lead ID'].slice(4)));
@@ -130,4 +177,4 @@ async function handler(req,res) {
   }
 }
 module.exports=handler;
-module.exports.__test={parseBody,normalizedLead,submissionToken,clean,validateTurnstile};
+module.exports.__test={parseBody,normalizedLead,submissionToken,clean,validateTurnstile,isApprovedCrmUrl,serverCrm};
