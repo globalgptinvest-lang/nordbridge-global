@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const lead=require('../../api/lead.js');
 const status=require('../../api/intake-status.js');
 const {normalizedLead,submissionToken,parseBody}=lead.__test;
-const envNames=['AIRTABLE_PERSONAL_ACCESS_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY'];
+const envNames=['AIRTABLE_PERSONAL_ACCESS_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY','NORDBRIDGE_CRM_API_URL','NORDBRIDGE_CRM_API_TOKEN'];
 const envOriginal=Object.fromEntries(envNames.map(k=>[k,process.env[k]]));
 const origFetch=global.fetch;
 afterEach(()=>{
@@ -143,4 +143,45 @@ test('Nested subscription-profile submit button still activates protected CRM ro
   assert.equal(challengeRendered,true);
   assert.equal(form.action,'/api/lead');
   assert.equal(form.dataset.intakeEnabled,'true');
+});
+
+test('Server CRM rejects arbitrary remote URL',()=>{
+  assert.equal(lead.__test.isApprovedCrmUrl('https://evil.example'),false);
+  assert.equal(lead.__test.isApprovedCrmUrl('http://crm.nordbridge-global.com'),false);
+  assert.equal(lead.__test.isApprovedCrmUrl('https://crm.nordbridge-global.com'),true);
+});
+test('Server CRM opt-in uses one protected write and no Airtable API',async()=>{
+  configured();
+  process.env.NORDBRIDGE_CRM_API_URL='https://crm.nordbridge-global.com';
+  process.env.NORDBRIDGE_CRM_API_TOKEN='x'.repeat(40);
+  const calls=[];
+  global.fetch=async(url,options)=>{
+    calls.push({url:String(url),options});
+    if(String(url).includes('/siteverify'))return {ok:true,json:async()=>({success:true,hostname:'nordbridge-global.com'})};
+    return {ok:true,json:async()=>({lead_id:'WEB-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',created:true})};
+  };
+  const r=response();await lead(request(),r);
+  assert.equal(r.statusCode,303);
+  assert.equal(calls.length,2);
+  assert.ok(calls[1].url.endsWith('/v1/website-leads'));
+  assert.equal(JSON.parse(calls[1].options.body).email,'person@example.org');
+  assert.ok(!calls.some(x=>x.url.includes('airtable.com')));
+  assert.equal(calls[1].options.headers.Authorization,'Bearer '+'x'.repeat(40));
+});
+test('Server selected but down => 503; no fallback to Airtable',async()=>{
+  configured();
+  process.env.NORDBRIDGE_CRM_API_URL='https://crm.nordbridge-global.com';
+  process.env.NORDBRIDGE_CRM_API_TOKEN='x'.repeat(40);
+  const calls=[];
+  global.fetch=async(url)=>{
+    calls.push(String(url));
+    if(String(url).includes('/siteverify'))return {ok:true,json:async()=>({success:true,hostname:'nordbridge-global.com'})};
+    return {ok:false,status:503,json:async()=>({})};
+  };
+  const r=response(), old=console.error; console.error=()=>{};
+  try {await lead(request(),r);}finally {console.error=old;}
+  assert.equal(r.statusCode,503);
+  assert.equal(r.headers.Location,undefined);
+  assert.equal(calls.length,2);
+  assert.ok(!calls.some(url=>url.includes('airtable.com')));
 });
