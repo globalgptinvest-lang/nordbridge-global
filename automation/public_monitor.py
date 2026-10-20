@@ -258,10 +258,23 @@ def query_prozorro(today=None):
             found.append(item)
     return found
 
+def _keyword_matches_title(title, keyword):
+    """Match only at the start of a word, preserving deliberately stemmed keywords.
+
+    Avoid false hits such as 'port' inside 'transport' or 'import'.  'Port'
+    is a complete word; other tokens intentionally cover morphological forms
+    such as engineering/engineer and consultancy/consult.
+    """
+    pattern = r"(?<!\\w)" + re.escape(keyword)
+    if keyword == "port":
+        pattern += r"\\b"
+    return re.search(pattern, title) is not None
+
+
 def rank_notice(notice):
     """Internal triage signal only: never claim a tender qualifies based on score."""
     title = notice["title"].casefold()
-    hits = [token for token in RELEVANT if token in title]
+    hits = [token for token in RELEVANT if _keyword_matches_title(title, token)]
     score = min(80, 20 + 15 * len(hits))
     if notice.get("value") is not None:
         score = min(90, score + 10)  # amount is sourced, not currency-converted
