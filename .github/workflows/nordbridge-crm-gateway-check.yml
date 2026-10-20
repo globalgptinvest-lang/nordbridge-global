@@ -43,9 +43,11 @@ jobs:
           PY
             then
               echo "| $domain | $status | HEALTHY (auth not tested) |" >> "$GITHUB_STEP_SUMMARY"
+              echo "GATEWAY_CHECK host=$domain http=$status health=READY_AUTH_UNVERIFIED"
               gateway_ready=1
             else
               echo "| $domain | $status | NOT VERIFIED |" >> "$GITHUB_STEP_SUMMARY"
+              echo "GATEWAY_CHECK host=$domain http=$status health=NOT_VERIFIED"
             fi
             rm -f "$tmp"
           done
@@ -65,14 +67,18 @@ jobs:
           PY
           then
             echo "Customer form intake readiness: READY (provider not identified)." >> "$GITHUB_STEP_SUMMARY"
+            echo "FORM_INTAKE http=$status status=READY_PROVIDER_UNVERIFIED"
           else
             echo "Customer form intake readiness: NOT VERIFIED; HTTP $status." >> "$GITHUB_STEP_SUMMARY"
+            echo "FORM_INTAKE http=$status status=NOT_VERIFIED"
           fi
           rm -f "$tmp"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [[ "$gateway_ready" -eq 1 ]]; then
             echo "Next gate: verify authentication, idempotent private POST and Vercel production secrets **before** cutover." >> "$GITHUB_STEP_SUMMARY"
+            echo "CUTOVER_GATE=PUBLIC_GATEWAY_HEALTHY_AUTH_STILL_UNVERIFIED"
           else
             echo "Cutover PENDING: neither approved VPS gateway is publicly healthy. Keep current Airtable/FormSubmit fallback." >> "$GITHUB_STEP_SUMMARY"
+            echo "CUTOVER_GATE=PUBLIC_GATEWAY_NOT_READY_KEEP_FALLBACK"
           fi
           echo "Staging probe complete: no server or website settings changed."
