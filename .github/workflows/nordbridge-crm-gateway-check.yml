@@ -1,0 +1,78 @@
+# Public, read-only deployment probe. No tokens, PII, CRM writes or form submissions.
+# A healthy /health endpoint alone does not prove authenticated intake works.
+name: NordBridge VPS CRM gateway staging check
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/nordbridge-crm-gateway-check.yml"
+  schedule:
+    - cron: "21 */12 * * *"
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check DNS, public TLS, and form readiness without changing production
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "## NordBridge — VPS CRM cutover readiness (read-only)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "No tokens or private customer data are accessed. No form is submitted." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gateway | HTTPS /health | Public health response |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          gateway_ready=0
+          for domain in crm.nordbridge-global.com office.nordbridge-global.com; do
+            tmp="$(mktemp)"
+            status="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
+              --output "$tmp" --write-out "%{http_code}" \
+              "https://$domain/health" 2>/dev/null)" || status="000"
+            if [[ "$status" == "200" ]] && python3 - "$tmp" <<'PY'
+          import json, sys
+          try:
+              with open(sys.argv[1], encoding="utf8") as f:
+                  payload=json.load(f)
+              assert isinstance(payload,dict) and payload.get("ready") is True
+          except (OSError, ValueError, AssertionError):
+              sys.exit(1)
+          PY
+            then
+              echo "| $domain | $status | HEALTHY (auth not tested) |" >> "$GITHUB_STEP_SUMMARY"
+              gateway_ready=1
+            else
+              echo "| $domain | $status | NOT VERIFIED |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            rm -f "$tmp"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          tmp="$(mktemp)"
+          status="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
+            --output "$tmp" --write-out "%{http_code}" \
+            https://nordbridge-global.com/api/intake-status 2>/dev/null)" || status="000"
+          if [[ "$status" == "200" ]] && python3 - "$tmp" <<'PY'
+          import json, sys
+          try:
+              with open(sys.argv[1], encoding="utf8") as f:
+                  x=json.load(f)
+              assert isinstance(x,dict) and x.get("ready") is True
+          except (OSError, ValueError, AssertionError):
+              sys.exit(1)
+          PY
+          then
+            echo "Customer form intake readiness: READY (provider not identified)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Customer form intake readiness: NOT VERIFIED; HTTP $status." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          rm -f "$tmp"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$gateway_ready" -eq 1 ]]; then
+            echo "Next gate: verify authentication, idempotent private POST and Vercel production secrets **before** cutover." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Cutover PENDING: neither approved VPS gateway is publicly healthy. Keep current Airtable/FormSubmit fallback." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Staging probe complete: no server or website settings changed."
