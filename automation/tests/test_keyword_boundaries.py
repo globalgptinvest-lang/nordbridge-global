@@ -26,7 +26,7 @@ class KeywordBoundaryTests(unittest.TestCase):
 
     def test_import_and_portfolio_are_not_port_tenders(self):
         for title in ("Import services", "Portfolio consultancy",
-                      "Portable medical equipment", "Rail trail maintenance"):
+                      "Portable medical equipment", "Trail maintenance"):
             with self.subTest(title=title):
                 result = self.rank(title)
                 self.assertNotIn("port", result["matched_keywords"])
