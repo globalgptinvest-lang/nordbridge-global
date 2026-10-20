@@ -265,9 +265,9 @@ def _keyword_matches_title(title, keyword):
     is a complete word; other tokens intentionally cover morphological forms
     such as engineering/engineer and consultancy/consult.
     """
-    pattern = r"(?<!\\w)" + re.escape(keyword)
+    pattern = r"(?<!\w)" + re.escape(keyword)
     if keyword == "port":
-        pattern += r"\\b"
+        pattern += r"\b"
     return re.search(pattern, title) is not None
 
 
