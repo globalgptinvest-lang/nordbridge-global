@@ -54,7 +54,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           tmp="$(mktemp)"
           status="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
-            --output "$tmp" --write-out "%{http_code}" \
+            --location --max-redirs 2 --output "$tmp" --write-out "%{http_code}" \
             https://nordbridge-global.com/api/intake-status 2>/dev/null)" || status="000"
           if [[ "$status" == "200" ]] && python3 - "$tmp" <<'PY'
           import json, sys
