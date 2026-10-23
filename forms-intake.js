@@ -30,6 +30,29 @@
               'response-field':true,
               'response-field-name':'cf-turnstile-response'
             });
+
+            // Run before forms.js: never navigate to the intake endpoint with an
+            // absent/expired challenge token or start a false submission event.
+            form.addEventListener('submit',event=>{
+              const token=form.querySelector('input[name="cf-turnstile-response"]');
+              if(token&&typeof token.value==='string'&&token.value.trim())return;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              let status=form.querySelector('.nb-intake-status');
+              if(!status){
+                status=document.createElement('div');
+                status.className='nb-intake-status form-status error';
+                status.setAttribute('role','alert');
+                button.parentNode.insertBefore(status,button);
+              }
+              const language=document.documentElement.lang||'en';
+              status.textContent=({
+                en:'The security check is not complete. Please wait and try again, or email info@nordbridge-global.com.',
+                uk:'Перевірку безпеки не завершено. Зачекайте та спробуйте ще раз або напишіть на info@nordbridge-global.com.',
+                da:'Sikkerhedskontrollen er ikke afsluttet. Vent og prøv igen, eller skriv til info@nordbridge-global.com.',
+                ar:'لم يكتمل فحص الأمان. يرجى الانتظار والمحاولة مجدداً أو مراسلة info@nordbridge-global.com.'
+              })[language]||'Please complete the security check or email info@nordbridge-global.com.';
+            },true);
             form.action='/api/lead';
             form.method='POST';
             form.dataset.intakeEnabled='true';
