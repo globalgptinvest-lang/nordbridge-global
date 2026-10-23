@@ -128,11 +128,12 @@ test('Nested subscription-profile submit button still activates protected CRM ro
     dataset:{},
     action:'https://formsubmit.co/fallback',
     method:'POST',
+    addEventListener(type,handler,capture){assert.equal(type,'submit');assert.equal(capture,true);assert.equal(typeof handler,'function');},
     querySelector(sel){return sel==='button[type="submit"]'?button:null;}
   };
   const document={
     querySelectorAll(sel){return sel==='form.lead-form'?[form]:[];},
-    createElement(){return{className:'',src:'',async:false,onload:null};},
+    createElement(){return{className:'',src:'',async:false,onload:null,remove(){}};},
     head:{appendChild(el){queueMicrotask(()=>el.onload());}}
   };
   const window={turnstile:{render(holder,opts){challengeRendered=true;assert.equal(opts['response-field-name'],'cf-turnstile-response');}}};
