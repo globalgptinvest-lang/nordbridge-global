@@ -49,6 +49,12 @@ def assess(prospect, prior_emails, bounces, optouts, seen_pairs, now=None):
     evidence_url = prospect.get("evidence_url")
     source_host = domain_from_url(evidence_url)
     kind = prospect.get("offer_type")
+    # Owner restrictions cannot be overridden by prospect records or model output.
+    identity_text = " ".join((company, email, str(source_host or "")))
+    if "bovendia" in identity_text:
+        reasons.append("owner_specific_message_permission_required")
+    if "zynthoro" in identity_text:
+        reasons.append("legal_hold_no_investor_outreach")
     if not company:
         reasons.append("company_missing")
     if not EMAIL.fullmatch(email):
