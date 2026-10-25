@@ -1,10 +1,6 @@
 name: NordBridge VPS read-only audit
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/nordbridge-vps-audit.yml'
 permissions:
   contents: read
 concurrency:
