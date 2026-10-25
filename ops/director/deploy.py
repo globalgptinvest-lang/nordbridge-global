@@ -60,7 +60,9 @@ def main():
       GRANT USAGE ON SCHEMA public TO nb_director;
       GRANT SELECT ON public.website_leads TO nb_director;"""
     run(['docker','exec','-i',db,'psql','-U',admin,'-d','nordbridge','-v','ON_ERROR_STOP=1'],sql)
-    secure(root/'director.py',base64.b64decode(SOURCE_B64).decode(),0o644)
+    source=Path(__file__).with_name('director.py').read_text() if SOURCE_B64.startswith('__') else base64.b64decode(SOURCE_B64).decode()
+    compile(source,'director.py','exec')
+    secure(root/'director.py',source,0o644)
     compose='''services:
   director:
     image: nordbridge-office-core
@@ -95,7 +97,7 @@ networks:
     run(dc+['config','--quiet'])
     run(dc+['run','--rm','--no-deps','director','python3','-c',
       "import director; assert len(director.ROLES)==14; assert 'BoVendia' in director.POLICY; print('IMPORT_PASS')"])
-    run(dc+['up','-d','--no-build'])
+    run(dc+['up','-d','--no-build','--force-recreate'])
     for attempt in range(24):
         try:
             run(['docker','exec','nordbridge-director-director-1','python3','-c',
@@ -108,16 +110,16 @@ networks:
     new=re.sub(r'----crm\.57\.129\.182\.200\.sslip\.io\s*\{\s*@health path /health\s*\}\s*','',old)
     host='office.57.129.182.200.sslip.io'
     if host not in new:
-        new+='\n'+host+' {\n encode zstd gzip\n @internal path /internal/*\n handle @internal { respond "Not found" 404 }\n handle { reverse_proxy nordbridge-director-director-1:8000 }\n}\n'
-    if new!=old:
-        secure(caddy,new,0o644)
-        try:
-            run(['docker','exec','nordbridge-office-caddy-1','caddy','validate','--config','/etc/caddy/Caddyfile'])
-            run(['docker','exec','nordbridge-office-caddy-1','caddy','reload','--config','/etc/caddy/Caddyfile'])
-        except Exception:
-            secure(caddy,old,0o644)
-            run(['docker','exec','nordbridge-office-caddy-1','caddy','reload','--config','/etc/caddy/Caddyfile'])
-            raise
+        new+='\n'+host+' {\n encode zstd gzip\n @internal path /internal/*\n handle @internal {\n  respond "Not found" 404\n }\n handle {\n  reverse_proxy nordbridge-director-director-1:8000\n }\n}\n'
+    secure(caddy,new,0o644)
+    try:
+        # stdin avoids stale single-file bind mounts after atomic host replacement.
+        run(['docker','exec','-i','nordbridge-office-caddy-1','caddy','validate','--config','-','--adapter','caddyfile'],new)
+        run(['docker','exec','-i','nordbridge-office-caddy-1','caddy','reload','--config','-','--adapter','caddyfile'],new)
+    except Exception:
+        secure(caddy,old,0o644)
+        run(['docker','exec','-i','nordbridge-office-caddy-1','caddy','reload','--config','-','--adapter','caddyfile'],old)
+        raise
     print('DIRECTOR_DEPLOY=PASS; owner credentials=/root/nordbridge-director-owner.txt; no password published',flush=True)
     print('COMPOSE_CONFIG=PASS; DIRECTOR_HEALTH=PASS; CADDY_VALIDATE=PASS',flush=True)
 
