@@ -1,0 +1,206 @@
+name: NordBridge real integration tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-integration.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-integration
+  cancel-in-progress: false
+jobs:
+  execute:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Authorized NordBridge operation with sanitized output
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
+          """VPS integration tests. Prints only aggregates and public URLs, never credentials."""
+          import datetime
+          import json
+          from pathlib import Path
+          import subprocess
+          import time
+          
+          def run(args,code=None,timeout=120):
+              p=subprocess.run(args,input=code,text=True,capture_output=True,timeout=timeout)
+              if p.returncode:
+                  return {'test':'FAIL','error':'command_exit_'+str(p.returncode),'detail':p.stderr[-600:] if 'Traceback' not in p.stderr else 'private traceback retained on VPS'}
+              try:return json.loads(p.stdout)
+              except:return {'test':'FAIL','error':'unexpected_output'}
+          
+          def inside(container,code,timeout=120):
+              return run(['docker','exec','-i',container,'python3','-'],code,timeout)
+          
+          DIRECTOR_TEST=r'''
+          import director as d,httpx,json,time,uuid
+          from psycopg.types.json import Jsonb
+          result={}
+          base='http://127.0.0.1:8000'
+          with httpx.Client(timeout=15,trust_env=False) as c:
+           result['unauthorized_tasks']=c.get(base+'/api/tasks').status_code==401
+           result['wrong_internal_key']=c.post(base+'/internal/tasks',json={'role':'crm','task':'test crm snapshot','fingerprint':'badkey-test'}).status_code==401
+           t={'role':'self_test','stream':'TEST','task':'Verify durable multi-step CRM write/read and local AI','fingerprint':'INTEGRATION-'+str(uuid.uuid4())}
+           key={'X-Director-Key':d.os.environ['DIRECTOR_KEY']}
+           a=c.post(base+'/internal/tasks',json=t,headers=key);a.raise_for_status();job=a.json()['id']
+           b=c.post(base+'/internal/tasks',json=t,headers=key);b.raise_for_status()
+           result['task_id']=job;result['duplicate_same_id']=b.json()['id']==job and not b.json()['created']
+          for attempt in range(42):
+           with d.db() as c:r=c.execute('SELECT status,attempts,result,error FROM director.jobs WHERE id=%s',(job,)).fetchone()
+           if r['status'] not in ('QUEUED','RUNNING'):break
+           time.sleep(4)
+          result['task_status']=r['status'];result['attempts']=r['attempts'];result['error']=r['error']
+          if r['result']:
+           result['crm_test']=r['result'].get('steps',{}).get('crm',{})
+           ai=r['result'].get('steps',{}).get('ai',{})
+           result['local_ai']={'nonempty':bool(ai.get('draft')),'model':ai.get('model'),'output_tokens':ai.get('output_tokens'),'paid_api_spend':ai.get('paid_api_spend')}
+          with d.db() as c:
+           result['test_step_count']=c.execute('SELECT count(*) n FROM director.steps WHERE job_id=%s',(job,)).fetchone()['n']
+           try:
+            c.execute("UPDATE public.website_leads SET status=status WHERE false")
+            result['least_privilege']=False
+           except d.psycopg.errors.InsufficientPrivilege:result['least_privilege']=True
+           c.rollback()
+          print(json.dumps(result))
+          '''
+          
+          CRM_TEST=r'''
+          import os,httpx,json,uuid,psycopg
+          token=os.environ['CRM_API_TOKEN'];key='WEB-INTERNALTEST-'+uuid.uuid4().hex
+          p={'lead_id':key,'company':'NordBridge INTERNAL SYNTHETIC TEST','email':'info@nordbridge-global.com','country':'Denmark','source_form':'Internal integration test','service':'NO COMMERCIAL ACTION - TEST','source_page':'/internal-test','privacy_consent':True}
+          with httpx.Client(timeout=20,trust_env=False) as c:
+           url='http://127.0.0.1:8000/v1/website-leads';headers={'Authorization':'Bearer '+token}
+           a=c.post(url,json=p,headers=headers);a.raise_for_status();b=c.post(url,json=p,headers=headers);b.raise_for_status()
+           unauthorized=c.post(url,json=p).status_code
+          with psycopg.connect(os.environ['DATABASE_URL']) as conn:
+           row=conn.execute('SELECT count(*) FROM website_leads WHERE lead_id=%s',(key,)).fetchone()
+           conn.execute("UPDATE website_leads SET status='INTERNAL_TEST' WHERE lead_id=%s",(key,))
+          print(json.dumps({'test':'PASS' if a.json().get('created') and not b.json().get('created') and row[0]==1 and unauthorized==401 else 'FAIL','lead_id':key,'stored_count':row[0],'first_created':a.json().get('created'),'duplicate_created':b.json().get('created'),'unauthorized_http':unauthorized,'production_website_cutover':False}))
+          '''
+          
+          PUBLIC_TEST=r'''
+          import httpx,json,xml.etree.ElementTree as ET,concurrent.futures
+          urls=['https://nordbridge-global.com/','https://nordbridge-global.com/sitemap.xml','https://nordbridge-global.com/robots.txt','https://office.57.129.182.200.sslip.io/','https://office.57.129.182.200.sslip.io/health','https://office.57.129.182.200.sslip.io/internal/tasks','https://office.57.129.182.200.sslip.io/api/tasks','https://crm.57.129.182.200.sslip.io/health','https://n8n.57.129.182.200.sslip.io/']
+          def get(u):
+           try:
+            with httpx.Client(timeout=25,follow_redirects=True,trust_env=False) as c:
+             r=c.get(u);return {'url':u,'http':r.status_code,'bytes':len(r.content)}
+           except Exception as e:return {'url':u,'error':type(e).__name__}
+          out=list(concurrent.futures.ThreadPoolExecutor(max_workers=4).map(get,urls))
+          try:
+           with httpx.Client(timeout=20,trust_env=False) as c:r=c.get(urls[1]);r.raise_for_status()
+           sm=[e.text for e in ET.fromstring(r.text).iter() if e.tag.endswith('loc') and e.text and e.text.startswith('https://nordbridge-global.com/')]
+           pages=list(concurrent.futures.ThreadPoolExecutor(max_workers=4).map(get,sm))
+          except Exception as e:pages=[{'error':type(e).__name__}]
+          print(json.dumps({'public':out,'sitemap_count':len(pages),'sitemap_bad':[p for p in pages if p.get('http')!=200]}))
+          '''
+          
+          BROWSER_TEST=r'''
+          import json,asyncio
+          from playwright.async_api import async_playwright
+          async def main():
+           results=[]
+           async with async_playwright() as p:
+            browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+            for mobile in (False,True):
+             context=await browser.new_context(viewport={'width':390 if mobile else 1365,'height':844 if mobile else 900},is_mobile=mobile,has_touch=mobile)
+             for path in ('/','/ua/','/da/','/ar/'):
+              page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(type(e).__name__))
+              try:
+               r=await page.goto('https://nordbridge-global.com'+path,wait_until='domcontentloaded',timeout=35000)
+               await page.wait_for_timeout(800)
+               results.append({'path':path,'mobile':mobile,'http':r.status,'js_errors':len(errors),'forms':await page.locator('form').count(),'title':(await page.title())[:100],'horizontal_overflow':await page.evaluate('document.documentElement.scrollWidth>innerWidth+2')})
+              except Exception as e:results.append({'path':path,'mobile':mobile,'error':type(e).__name__})
+              await page.close()
+             await context.close()
+            await browser.close()
+           print(json.dumps(results))
+          asyncio.run(main())
+          '''
+          
+          MAIL_TEST=r'''
+          import imaplib,smtplib,ssl,json,uuid,time,datetime
+          from pathlib import Path
+          from email.message import EmailMessage
+          cfg={}
+          for line in Path('/root/nordbridge-smtp.env').read_text().splitlines():
+           if '=' in line and not line.lstrip().startswith('#'):
+            k,v=line.split('=',1);cfg[k.strip()]=v.strip().strip('"').strip("'")
+          out={'sent':0,'received_test':0,'external_recipients':0}
+          try:
+           user=cfg.get('SMTP_USER','');password=cfg.get('SMTP_PASSWORD','')
+           if user.lower()!='info@nordbridge-global.com' or not password:raise ValueError('authorized_corporate_identity_missing')
+           context=ssl.create_default_context()
+           with imaplib.IMAP4_SSL('mail.spacemail.com',993,ssl_context=context,timeout=25) as mail:
+            mail.login(user,password);status,count=mail.select('INBOX',readonly=True)
+            out['imap_login']=status;out['inbox_count']=int(count[0]) if status=='OK' else None
+            status,rows=mail.uid('search',None,'ALL');out['imap_search']=status
+            port=int(cfg.get('SMTP_PORT','465'));host=cfg.get('SMTP_HOST','mail.spacemail.com')
+            if host!='mail.spacemail.com' or port not in (465,587):raise ValueError('unexpected_smtp_endpoint')
+            with (smtplib.SMTP_SSL(host,port,context=context,timeout=25) if port==465 else smtplib.SMTP(host,port,timeout=25)) as smtp:
+             if port==587:smtp.ehlo();smtp.starttls(context=context);smtp.ehlo()
+             smtp.login(user,password);out['smtp_auth']='PASS'
+             marker='NB-INTERNAL-'+uuid.uuid4().hex
+             msg=EmailMessage();msg['From']=user;msg['To']=user;msg['Subject']=marker
+             msg.set_content('NordBridge internal integration test. No customer action required. https://nordbridge-global.com\n'+marker)
+             refused=smtp.send_message(msg,from_addr=user,to_addrs=[user]);out['sent']=1 if not refused else 0
+            for i in range(10):
+             mail.noop();status,found=mail.uid('search',None,'SUBJECT',marker)
+             if status=='OK' and found[0]:out['received_test']=1;break
+             time.sleep(3)
+            mail.logout()
+          except Exception as e:out['error']=type(e).__name__
+          print(json.dumps(out))
+          '''
+          
+          def main():
+              out={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              out['director']=inside('nordbridge-director-director-1',DIRECTOR_TEST,210)
+              out['crm']=inside('nordbridge-crm-api-1',CRM_TEST)
+              out['public']=inside('nordbridge-office-core-1',PUBLIC_TEST,180)
+              out['browser']=inside('nordbridge-office-core-1',BROWSER_TEST,300)
+              # Mail secrets remain on VPS. The sole recipient is the authenticated corporate mailbox itself.
+              out['mail']=run(['python3','-'],MAIL_TEST,150)
+              ted=subprocess.run(['python3','/usr/local/libexec/nordbridge-ted-connector.py','run'],capture_output=True,text=True,timeout=180)
+              try:out['ted']=json.loads(ted.stdout)
+              except:out['ted']={'test':'FAIL','exit':ted.returncode}
+              path=Path('/var/backups/nordbridge-director/integration-result.json')
+              path.write_text(json.dumps(out,indent=2));path.chmod(0o600)
+              print('INTEGRATION_RESULT='+json.dumps(out))
+          
+          if __name__=='__main__':main()
+          NB_REMOTE_PAYLOAD
