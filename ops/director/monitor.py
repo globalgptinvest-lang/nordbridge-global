@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import sqlite3
 
 STATE=Path('/var/lib/nordbridge-director-monitor.json')
 
@@ -29,6 +30,18 @@ def main():
     fail=0 if healthy else old.get('consecutive_failures',0)+1
     out={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'healthy':healthy,
          'simulated':simulated,'consecutive_failures':fail,'restarts':restarts}
+    mail=Path('/opt/nordbridge-mail-agent/state.db')
+    if healthy and mail.is_file():
+        try:
+            with sqlite3.connect('file:'+str(mail)+'?mode=ro',uri=True,timeout=5) as c:
+                summary={'classification_counts':dict(c.execute('SELECT category,count(*) FROM messages GROUP BY category').fetchall()),
+                         'last_processed':c.execute('SELECT max(processed_at) FROM messages').fetchone()[0],
+                         'source':'Existing authorized corporate mailbox review agent','mode':'REVIEW_ONLY',
+                         'message_level_crm_sync':False}
+            code="import director as d,json,sys; d.audit('mail_review_snapshot',json.load(sys.stdin))"
+            p=subprocess.run(['docker','exec','-i','nordbridge-director-director-1','python3','-c',code],input=json.dumps(summary),text=True,capture_output=True,timeout=20)
+            out['mail_snapshot_saved']=p.returncode==0
+        except Exception:out['mail_snapshot_saved']=False
     if healthy:
         try:out['schedule']=json.loads(r.stdout)
         except:out['schedule']='INVALID_RESPONSE';out['healthy']=False
