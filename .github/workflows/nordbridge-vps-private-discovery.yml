@@ -100,13 +100,14 @@ jobs:
             try:
              for k,v in json.loads(data).items():packet['files'][c['Name']+':'+k]=v
             except ValueError:pass
-          for p in ['/root/nordbridge-mail','/opt/nordbridge-office','/home/ubuntu/nordbridge_server_crm']:
+          for p in ['/root/nordbridge-mail','/opt/nordbridge-mail-agent','/usr/local/libexec','/opt/nordbridge-office','/home/ubuntu/nordbridge_server_crm']:
            if Path(p).is_dir():roots.add(Path(p))
           for root in roots:
            for folder,dirs,files in os.walk(root):
             dirs[:]=[d for d in dirs if d not in ['.git','node_modules','__pycache__','.venv','venv','data','logs','backups','pgdata','postgres','qdrant','models','storage'] and len(Path(folder).relative_to(root).parts)<4]
             for f in files:
              p=Path(folder)/f
+             if root == Path('/usr/local/libexec') and not any(t in p.name for t in ['nordbridge','nb_','nb-']):continue
              if p.suffix not in ['.py','.sh','.js','.ts','.yml','.yaml','.toml'] and f not in ['Dockerfile','requirements.txt','package.json','Caddyfile']:continue
              if p.is_symlink() or p.stat().st_size>200000 or budget>4000000:continue
              try:s=p.read_text();packet['files'][str(p)]=s;budget+=len(s)
