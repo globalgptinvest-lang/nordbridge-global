@@ -48,13 +48,14 @@ print(json.dumps(result))
 '''
 
 CRM_TEST=r'''
-import os,httpx,json,uuid,psycopg
+import os,requests,json,uuid,psycopg
 token=os.environ['CRM_API_TOKEN'];key='WEB-INTERNALTEST-'+uuid.uuid4().hex
 p={'lead_id':key,'company':'NordBridge INTERNAL SYNTHETIC TEST','email':'info@nordbridge-global.com','country':'Denmark','source_form':'Internal integration test','service':'NO COMMERCIAL ACTION - TEST','source_page':'/internal-test','privacy_consent':True}
-with httpx.Client(timeout=20,trust_env=False) as c:
+with requests.Session() as c:
+ c.trust_env=False
  url='http://127.0.0.1:8000/v1/website-leads';headers={'Authorization':'Bearer '+token}
- a=c.post(url,json=p,headers=headers);a.raise_for_status();b=c.post(url,json=p,headers=headers);b.raise_for_status()
- unauthorized=c.post(url,json=p).status_code
+ a=c.post(url,json=p,headers=headers,timeout=20);a.raise_for_status();b=c.post(url,json=p,headers=headers,timeout=20);b.raise_for_status()
+ unauthorized=c.post(url,json=p,timeout=20).status_code
 with psycopg.connect(os.environ['DATABASE_URL']) as conn:
  row=conn.execute('SELECT count(*) FROM website_leads WHERE lead_id=%s',(key,)).fetchone()
  conn.execute("UPDATE website_leads SET status='INTERNAL_TEST' WHERE lead_id=%s",(key,))
@@ -71,8 +72,8 @@ def get(u):
  except Exception as e:return {'url':u,'error':type(e).__name__}
 out=list(concurrent.futures.ThreadPoolExecutor(max_workers=4).map(get,urls))
 try:
- with httpx.Client(timeout=20,trust_env=False) as c:r=c.get(urls[1]);r.raise_for_status()
- sm=[e.text for e in ET.fromstring(r.text).iter() if e.tag.endswith('loc') and e.text and e.text.startswith('https://nordbridge-global.com/')]
+ with httpx.Client(timeout=20,trust_env=False,follow_redirects=True) as c:r=c.get(urls[1]);r.raise_for_status()
+ sm=[e.text for e in ET.fromstring(r.text).iter() if e.tag.endswith('loc') and e.text and e.text.startswith(('https://nordbridge-global.com/','https://www.nordbridge-global.com/'))]
  pages=list(concurrent.futures.ThreadPoolExecutor(max_workers=4).map(get,sm))
 except Exception as e:pages=[{'error':type(e).__name__}]
 print(json.dumps({'public':out,'sitemap_count':len(pages),'sitemap_bad':[p for p in pages if p.get('http')!=200]}))
@@ -87,11 +88,17 @@ async def main():
   browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
   for mobile in (False,True):
    context=await browser.new_context(viewport={'width':390 if mobile else 1365,'height':844 if mobile else 900},is_mobile=mobile,has_touch=mobile)
-   for path in ('/','/ua/','/da/','/ar/'):
+   for path in ('/','/business-financing.html','/submit-tender.html','/company-profile.html'):
     page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(type(e).__name__))
     try:
      r=await page.goto('https://nordbridge-global.com'+path,wait_until='domcontentloaded',timeout=35000)
      await page.wait_for_timeout(800)
+     if path=='/business-financing.html':
+      for lang in ('en','uk','da','ar'):
+       await page.locator('.language-switcher [data-lang='+lang+']').click(force=True)
+       await page.wait_for_timeout(150)
+       assert await page.locator('html').get_attribute('lang')==lang
+       assert (await page.locator('[data-bf-key=heroTitle]').inner_text()).strip()
      results.append({'path':path,'mobile':mobile,'http':r.status,'js_errors':len(errors),'forms':await page.locator('form').count(),'title':(await page.title())[:100],'horizontal_overflow':await page.evaluate('document.documentElement.scrollWidth>innerWidth+2')})
     except Exception as e:results.append({'path':path,'mobile':mobile,'error':type(e).__name__})
     await page.close()
