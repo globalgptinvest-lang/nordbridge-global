@@ -1,10 +1,6 @@
 name: NordBridge VPS backup and service verification
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/nordbridge-vps-maintenance.yml'
 permissions:
   contents: read
 concurrency:
