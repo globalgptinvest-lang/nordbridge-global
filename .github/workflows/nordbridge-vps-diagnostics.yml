@@ -1,0 +1,73 @@
+name: NordBridge bounded failure diagnostics
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-diagnostics.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-diagnostics
+  cancel-in-progress: false
+jobs:
+  execute:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Authorized NordBridge operation with sanitized output
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
+          import json,socket,ssl,subprocess,urllib.request
+          from pathlib import Path
+          out={}
+          for host in ['office.57.129.182.200.sslip.io','crm.57.129.182.200.sslip.io']:
+           try:out[host]={'ip':socket.gethostbyname(host)}
+           except Exception as e:out[host]={'dns_error':str(e)}
+           try:
+            with urllib.request.urlopen('https://'+host+'/health',timeout=20) as r:out[host]['https']=r.status
+           except Exception as e:out[host]['https_error']=str(e)
+          r=subprocess.run(['docker','logs','--since','15m','nordbridge-office-caddy-1'],capture_output=True,text=True,timeout=30)
+          logs=[]
+          for line in (r.stdout+r.stderr).splitlines():
+           try:
+            v=json.loads(line)
+            if v.get('level') in ['error','warn']:
+             logs.append({k:v[k] for k in ['level','logger','msg','identifier','error'] if k in v})
+           except:pass
+          out['caddy_errors']=logs[-12:]
+          r=subprocess.run(['docker','exec','nordbridge-crm-api-1','python3','-c',"import importlib.util,json;print(json.dumps({x:bool(importlib.util.find_spec(x)) for x in ['httpx','psycopg','requests']}))"],capture_output=True,text=True,timeout=30)
+          out['crm_modules']=r.stdout.strip()
+          print(json.dumps(out))
+          NB_REMOTE_PAYLOAD
