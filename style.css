@@ -119,3 +119,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   overflow:hidden!important;
   white-space:nowrap;
 }
+
+/* Keep translated hero text and hidden spam fields within the viewport. */
+.page-hero-inner > *{min-width:0}
+.page-hero h1{overflow-wrap:anywhere}
+html body form.lead-form input.form-honey,html body [data-site-identity]{contain:strict!important;width:1px!important;height:1px!important;position:fixed!important;left:0!important;top:0!important;padding:0!important;border:0!important;margin:0!important;overflow:hidden!important;clip-path:inset(50%)!important}
