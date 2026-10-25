@@ -1,0 +1,106 @@
+name: NordBridge VPS read-only audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-audit.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-readonly-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read-only VPS audit without secret or customer data
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            -p 22 workagent@57.129.182.200 'python3 -' <<'NORDBRIDGE_AUDIT_PY'
+          import json, subprocess, os, shutil, urllib.request
+          from pathlib import Path
+          from datetime import datetime, timezone
+          
+          def run(args):
+              try:
+                  r=subprocess.run(args,capture_output=True,text=True,timeout=15)
+                  return r.returncode,r.stdout.strip()
+              except (OSError,subprocess.TimeoutExpired):return 127,''
+          
+          report={'checked_at':datetime.now(timezone.utc).isoformat(),'scope':'read_only_no_secret_or_customer_data','identity_verified':run(['id','-un'])[1]=='workagent'}
+          release={}
+          for line in Path('/etc/os-release').read_text().splitlines():
+              k,sep,v=line.partition('=')
+              if sep:release[k]=v.strip('"')
+          report['os']=release.get('PRETTY_NAME','unknown')
+          report['cpu_count']=os.cpu_count()
+          report['load_1m']=os.getloadavg()[0]
+          mem={}
+          for line in Path('/proc/meminfo').read_text().splitlines():
+              k,_,v=line.partition(':');mem[k]=int(v.strip().split()[0])
+          report['ram_mib']={k:round(mem.get(k,0)/1024) for k in ['MemTotal','MemAvailable','SwapTotal','SwapFree']}
+          disk=shutil.disk_usage('/')
+          report['disk_gib']={'total':round(disk.total/1024**3,2),'free':round(disk.free/1024**3,2)}
+          report['services']={s:run(['systemctl','is-active',s])[1] for s in ['docker','cron','ssh','n8n','postgresql']}
+          report['docker_boot_enabled']=run(['systemctl','is-enabled','docker'])[1]
+          code,out=run(['docker','ps','-a','--format','{{json .}}'])
+          command=['docker']
+          if code:
+              code,out=run(['sudo','-n','docker','ps','-a','--format','{{json .}}']);command=['sudo','-n','docker']
+          report['docker_access']='WORKING' if code==0 else 'BLOCKED'
+          if code==0:
+              rows=[json.loads(line) for line in out.splitlines() if line]
+              report['containers_total']=len(rows)
+              report['containers_running']=sum(r.get('State')=='running' for r in rows)
+              summary=[]
+              for row in rows:
+                  ident=row['ID'];label=(row.get('Names','')+' '+row.get('Image','')).lower()
+                  kind=next((k for k in ['postgres','n8n','ollama','redis','qdrant','caddy','traefik','nginx','crm','worker','core'] if k in label),'other')
+                  health=run(command+['inspect','--format','{{if .State.Health}}{{.State.Health.Status}}{{else}}not_configured{{end}}',ident])[1]
+                  restart=run(command+['inspect','--format','{{.HostConfig.RestartPolicy.Name}}',ident])[1]
+                  summary.append({'kind':kind,'state':row.get('State'),'health':health,'restart':restart})
+              report['containers']=summary
+          code,ports=run(['ss','-H','-ltn'])
+          report['public_bindings']={}
+          for port in [22,5432,5678,11434]:
+              report['public_bindings'][str(port)]=any(len(row.split())>3 and row.split()[3] in ['0.0.0.0:'+str(port),'[::]:'+str(port),'*:'+str(port)] for row in ports.splitlines()) if code==0 else 'NOT VERIFIED'
+          report['loopback_health']={}
+          for name,url in [('n8n','http://127.0.0.1:5678/healthz'),('ollama','http://127.0.0.1:11434/api/tags')]:
+              try:
+                  with urllib.request.urlopen(url,timeout=4) as response:report['loopback_health'][name]={'http':response.status,'scope':'endpoint_only'}
+              except Exception:report['loopback_health'][name]={'status':'NOT VERIFIED'}
+          report['backup_restore_crm_readwrite']='NOT TESTED IN READ-ONLY AUDIT'
+          print(json.dumps(report,ensure_ascii=False,sort_keys=True))
+          NORDBRIDGE_AUDIT_PY
