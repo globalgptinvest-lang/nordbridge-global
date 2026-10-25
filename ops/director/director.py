@@ -44,7 +44,7 @@ def migrate():
           id uuid PRIMARY KEY, role text NOT NULL, stream text NOT NULL,
           task text NOT NULL, fingerprint text UNIQUE NOT NULL,
           status text NOT NULL DEFAULT 'QUEUED' CHECK(status IN
-            ('QUEUED','RUNNING','DONE','BLOCKED','FAILED')),
+            ('QUEUED','RUNNING','WAITING','DONE','BLOCKED','FAILED')),
           attempts int NOT NULL DEFAULT 0, lease_until timestamptz, lease_token text,
           result jsonb, error text, created_at timestamptz NOT NULL DEFAULT now(),
           updated_at timestamptz NOT NULL DEFAULT now());
@@ -60,6 +60,13 @@ def migrate():
         CREATE TABLE IF NOT EXISTS director.schedule_runs(slot text PRIMARY KEY,
           role text NOT NULL, created_at timestamptz DEFAULT now());
         CREATE INDEX IF NOT EXISTS jobs_ready ON director.jobs(status,created_at);''')
+        c.execute('''DO $$ BEGIN
+          IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='director.jobs'::regclass
+            AND conname='jobs_status_check' AND pg_get_constraintdef(oid) NOT LIKE '%WAITING%') THEN
+            ALTER TABLE director.jobs DROP CONSTRAINT jobs_status_check;
+            ALTER TABLE director.jobs ADD CONSTRAINT jobs_status_check CHECK(status IN
+              ('QUEUED','RUNNING','WAITING','DONE','BLOCKED','FAILED'));
+          END IF; END $$;''')
         for table in ENTITIES:
             c.execute(f'''CREATE TABLE IF NOT EXISTS director.{table}(
               id uuid PRIMARY KEY, stream text NOT NULL CHECK(stream IN('NORDBRIDGE','FINANCING','ZHIKAL','TEST')),
@@ -79,7 +86,7 @@ def enqueue(t):
     if t.role not in ROLES or t.stream not in ('NORDBRIDGE','FINANCING','ZHIKAL','TEST'):
         raise HTTPException(400,'Invalid role or stream')
     with db() as c:
-        pending=c.execute("SELECT count(*) n FROM director.jobs WHERE status IN ('QUEUED','RUNNING')").fetchone()['n']
+        pending=c.execute("SELECT count(*) n FROM director.jobs WHERE status IN ('QUEUED','RUNNING','WAITING')").fetchone()['n']
         if pending>=30:
             raise HTTPException(429,'Queue limit reached')
         row=c.execute('''INSERT INTO director.jobs(id,role,stream,task,fingerprint)
@@ -136,11 +143,38 @@ def local_model(text):
         return {'draft':answer,'model':preferred,'external_sent':0,'paid_api_spend':0,
                 'output_tokens':out.get('eval_count')}
 
-def factual_snapshot():
+def factual_snapshot(stream='NORDBRIDGE'):
     with db() as c:
-        counts={t:c.execute(f'SELECT count(*) n FROM director.{t}').fetchone()['n'] for t in ENTITIES}
-        counts['website_leads']=c.execute('SELECT count(*) n FROM public.website_leads').fetchone()['n']
-    return {'counts':counts,'note':'Database counts do not prove paid clients or received payments.'}
+        counts={t:c.execute(f'SELECT count(*) n FROM director.{t} WHERE stream=%s',(stream,)).fetchone()['n'] for t in ENTITIES}
+        counts['website_leads']=c.execute('SELECT count(*) n FROM public.website_leads').fetchone()['n'] if stream=='NORDBRIDGE' else 0
+    return {'stream':stream,'counts':counts,'note':'Database counts do not prove paid clients or received payments.'}
+
+def dispatch_checks(job):
+    ids=[]
+    with db() as c:
+        pending=c.execute("SELECT count(*) n FROM director.jobs WHERE status IN ('QUEUED','RUNNING','WAITING')").fetchone()['n']
+        if pending>25:return {'blocked':'queue_backpressure','children':[]}
+        for role in ('crm','website','communications','security'):
+            fp='CHILD-'+str(job['id'])+'-'+role
+            c.execute('''INSERT INTO director.jobs(id,role,stream,task,fingerprint)
+              VALUES(%s,%s,%s,%s,%s) ON CONFLICT(fingerprint) DO NOTHING''',
+              (uuid.uuid4(),role,job['stream'],'Director delegated bounded read-only check; no external sending.',fp))
+            row=c.execute('SELECT id FROM director.jobs WHERE fingerprint=%s',(fp,)).fetchone()
+            ids.append(str(row['id']))
+    return {'children':ids,'allowed_operations':'Read-only CRM, public website, mailbox summary, application checks.'}
+
+def finalize_waiting():
+    with db() as c:
+        parents=c.execute("SELECT id,result FROM director.jobs WHERE status='WAITING' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 30").fetchall()
+        for parent in parents:
+            result=parent['result'];ids=result.get('delegation',{}).get('children',[])
+            if not ids:continue
+            children=c.execute('SELECT id,role,status,error FROM director.jobs WHERE id=ANY(%s::uuid[])',(ids,)).fetchall()
+            if len(children)!=len(ids) or any(x['status'] in ('QUEUED','RUNNING','WAITING') for x in children):continue
+            status='FAILED' if any(x['status']=='FAILED' for x in children) else 'BLOCKED' if any(x['status']=='BLOCKED' for x in children) else 'DONE'
+            result['children']=[{**x,'id':str(x['id'])} for x in children];result['status']=status
+            c.execute('UPDATE director.jobs SET status=%s,result=%s,updated_at=now() WHERE id=%s',(status,Jsonb(result),parent['id']))
+            c.execute('INSERT INTO director.audit(kind,data) VALUES(%s,%s)',('director_children_finished',Jsonb({'parent':str(parent['id']),'status':status})))
 
 def self_test(job):
     marker='SELFTEST-'+str(job['id'])
@@ -203,6 +237,7 @@ def execute(job):
                 'scope':'Classification counts from the existing authenticated review-only mail agent; not full message sync.',
                 'external_sent':0,'sending_connected':False}
     if role=='products':
+        if job['stream'] not in ('NORDBRIDGE','TEST'):return {'status':'BLOCKED','reason':'NordBridge product drafts are separate from Zhikal and financing pipelines.'}
         with db() as c:
             row=c.execute("SELECT id,data,updated_at FROM director.proposals WHERE stream='NORDBRIDGE' AND data->>'kind'='product_research' ORDER BY updated_at DESC LIMIT 1").fetchone()
         if not row:return {'status':'BLOCKED','reason':'Verified competitor research has not been saved.'}
@@ -210,11 +245,13 @@ def execute(job):
                 'scope':'Saved public-source research snapshot; periodic automatic price refresh not connected.',
                 'approval_required':True,'external_sent':0,'prices_activated':False}
     if role in ('director','crm','security'):
-        snap=step(job,'crm_snapshot',factual_snapshot)
+        snap=step(job,'crm_snapshot',lambda:factual_snapshot(job['stream']))
         if role=='crm':return {'status':'DONE','snapshot':snap}
         if role=='security':return {'status':'DONE','snapshot':snap,'scope':'Director DB and application only; host audit is separate','outbound_tools':False}
         draft=step(job,'plan',lambda:local_model(job['task']+'\nVerified database snapshot: '+json.dumps(snap)))
-        return {'status':'DONE','snapshot':snap,'plan':draft,'scope':'Plan and CRM snapshot; external execution requires connected tools.'}
+        delegation=step(job,'delegate_checks',lambda:dispatch_checks(job))
+        return {'status':'WAITING' if delegation.get('children') else 'BLOCKED','snapshot':snap,'plan':draft,
+                'delegation':delegation,'scope':'Plan plus four durable read-only department checks; commercial sending remains disconnected.'}
     if role in ('sales','legal','marketing'):
         d=step(job,'draft',lambda:local_model('Role: '+role+'\nTask supplied by owner: '+job['task']))
         return {'status':'DONE','draft':d,'approval_required':True,'external_sent':0,'facts_verified':False}
@@ -227,6 +264,7 @@ def execute(job):
         'products':'Market price evidence required before product proposal.'}[role], 'external_sent':0}
 
 def work_once():
+    finalize_waiting()
     job=claim()
     if not job:return False
     try:
