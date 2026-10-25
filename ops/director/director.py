@@ -121,7 +121,7 @@ def step(job,name,fn):
 
 def local_model(text):
     base=os.environ.get('OLLAMA_URL','http://ollama:11434')
-    with httpx.Client(timeout=120,trust_env=False) as client:
+    with httpx.Client(timeout=httpx.Timeout(150,connect=10),trust_env=False) as client:
         tags=client.get(base+'/api/tags');tags.raise_for_status()
         names=[m['name'] for m in tags.json().get('models',[])]
         preferred=next((n for n in names if n.startswith('llama3.1:8b')),None)
@@ -129,7 +129,7 @@ def local_model(text):
             raise RuntimeError('configured_local_model_missing')
         r=client.post(base+'/api/chat',json={'model':preferred,'stream':False,
             'messages':[{'role':'system','content':POLICY},{'role':'user','content':text[:6000]}],
-            'options':{'num_predict':256,'num_ctx':2048,'temperature':0.1},'keep_alive':'5m'})
+            'options':{'num_predict':96,'num_ctx':2048,'temperature':0.1},'keep_alive':'5m'})
         r.raise_for_status();out=r.json()
         answer=out.get('message',{}).get('content','').strip()
         if not answer:raise RuntimeError('empty_model_result')
@@ -195,6 +195,20 @@ def execute(job):
     if role=='self_test': return self_test(job)
     if role=='tenders': return step(job,'official_ted_candidates',lambda:tender_import(job))
     if role=='website': return step(job,'public_http',website_check)
+    if role=='communications':
+        with db() as c:
+            row=c.execute("SELECT ts,data FROM director.audit WHERE kind='mail_review_snapshot' AND ts>now()-interval '20 minutes' ORDER BY ts DESC LIMIT 1").fetchone()
+        if not row:return {'status':'BLOCKED','reason':'Fresh corporate mailbox review snapshot unavailable.'}
+        return {'status':'DONE','mail_review':row['data'],'snapshot_at':str(row['ts']),
+                'scope':'Classification counts from the existing authenticated review-only mail agent; not full message sync.',
+                'external_sent':0,'sending_connected':False}
+    if role=='products':
+        with db() as c:
+            row=c.execute("SELECT id,data,updated_at FROM director.proposals WHERE stream='NORDBRIDGE' AND data->>'kind'='product_research' ORDER BY updated_at DESC LIMIT 1").fetchone()
+        if not row:return {'status':'BLOCKED','reason':'Verified competitor research has not been saved.'}
+        return {'status':'DONE','proposal_id':str(row['id']),'research':row['data'],
+                'scope':'Saved public-source research snapshot; periodic automatic price refresh not connected.',
+                'approval_required':True,'external_sent':0,'prices_activated':False}
     if role in ('director','crm','security'):
         snap=step(job,'crm_snapshot',factual_snapshot)
         if role=='crm':return {'status':'DONE','snapshot':snap}
