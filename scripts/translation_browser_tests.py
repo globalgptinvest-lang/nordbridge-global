@@ -3,10 +3,11 @@
 Does not claim human linguistic QA; only verifies functionality and nonempty localized content.
 """
 import asyncio
+import os
 from playwright.async_api import async_playwright
 from audit_network import goto_with_retry
 
-URL = "https://www.nordbridge-global.com/business-financing.html"
+URL = os.environ.get("BASE_URL", "https://www.nordbridge-global.com").rstrip("/")+"/business-financing.html"
 LANGS = {"en": "Funding", "uk": "фінанс", "da": "finans", "ar": "تمويل"}
 
 async def main():
@@ -26,6 +27,7 @@ async def main():
                 assert await page.locator("[data-bf-key='submit']").count() > 0, f"{lang} submit text missing"
                 assert (await page.locator("[data-bf-key='submit']").inner_text()).strip(), f"{lang} submit text empty"
                 assert (await page.locator("html").get_attribute("lang")) == lang, f"HTML lang did not change to {lang}"
+                assert not await page.evaluate("document.documentElement.scrollWidth > innerWidth + 2"), f"Horizontal overflow in {lang} at {viewport}"
             await page.close()
         await browser.close()
     print("Language switcher smoke checks passed (EN/UK/DA/AR, desktop/mobile)")
