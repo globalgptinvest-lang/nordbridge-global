@@ -1,0 +1,106 @@
+name: NordBridge verified layout candidate and SSH preserving firewall
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-hardening.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-hardening
+  cancel-in-progress: false
+jobs:
+  execute:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Authorized NordBridge operation with sanitized output
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
+          import datetime,json,subprocess,tarfile,os
+          from pathlib import Path
+          CSS='''/* Keep translated hero text and hidden spam fields within the viewport. */
+          .page-hero-inner > *{min-width:0}
+          .page-hero h1{overflow-wrap:anywhere}
+          .form-honey{left:0!important;top:0!important;padding:0!important;border:0!important;margin:0!important;overflow:hidden!important;clip-path:inset(50%)!important}
+          '''
+          probe=r'''
+          import asyncio,json
+          from playwright.async_api import async_playwright
+          async def main():
+           results=[]
+           async with async_playwright() as p:
+            b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+            for width in [390,1365]:
+             for path in ['/business-financing.html','/submit-tender.html','/company-profile.html']:
+              page=await b.new_page(viewport={'width':width,'height':844})
+              await page.goto('https://nordbridge-global.com'+path,wait_until='domcontentloaded',timeout=30000)
+              await page.add_style_tag(content=CSS)
+              for lang in ['en','uk','da','ar']:
+               button=page.locator('.language-switcher [data-lang='+lang+']')
+               if await button.count():await button.click(force=True)
+               await page.wait_for_timeout(150)
+               overflow=await page.evaluate('document.documentElement.scrollWidth>innerWidth+2')
+               results.append({'path':path,'width':width,'lang':lang,'overflow':overflow})
+              await page.close()
+            await b.close()
+           print(json.dumps({'checks':results,'pass':all(not r['overflow'] for r in results)}))
+          asyncio.run(main())
+          '''
+          p=subprocess.run(['docker','exec','-i','nordbridge-office-core-1','python3','-'],input='CSS='+repr(CSS)+'\n'+probe,text=True,capture_output=True,timeout=300)
+          try:out={'css_prepublication_test':json.loads(p.stdout)}
+          except:out={'css_prepublication_test':{'error':'probe_exit_'+str(p.returncode)}}
+          os.umask(0o077)
+          dest=Path('/var/backups/nordbridge-director')/datetime.datetime.now(datetime.timezone.utc).strftime('firewall-%Y%m%dT%H%M%SZ');dest.mkdir(mode=0o700)
+          with tarfile.open(dest/'ufw-before.tar.gz','w:gz') as a:a.add('/etc/ufw',arcname='etc/ufw')
+          ss=subprocess.check_output(['ss','-lntH'],text=True)
+          ports=set()
+          for line in ss.splitlines():
+           fields=line.split();addr=fields[3]
+           if addr.startswith(('127.','[::1]:','::1:')):continue
+           if addr.startswith(('0.0.0.0:','[::]:','*:', ':::')):
+            try:ports.add(int(addr.rsplit(':',1)[1]))
+            except:pass
+          out['public_tcp_ports_before']=sorted(ports)
+          if ports.issubset({22,80,443}):
+           for port in [22,80,443]:subprocess.run(['ufw','allow',str(port)+'/tcp'],check=True,capture_output=True)
+           subprocess.run(['ufw','default','deny','incoming'],check=True,capture_output=True)
+           subprocess.run(['ufw','default','allow','outgoing'],check=True,capture_output=True)
+           subprocess.run(['ufw','--force','enable'],check=True,capture_output=True)
+           out['ufw_enabled']=True
+          else:out['ufw_enabled']=False;out['reason']='Other public services require inventory before default deny.'
+          out['ufw_status']=subprocess.check_output(['ufw','status'],text=True)
+          print('CSS_FIREWALL_TEST='+json.dumps(out))
+          NB_REMOTE_PAYLOAD
