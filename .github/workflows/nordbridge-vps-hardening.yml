@@ -54,7 +54,7 @@ jobs:
           CSS='''/* Keep translated hero text and hidden spam fields within the viewport. */
           .page-hero-inner > *{min-width:0}
           .page-hero h1{overflow-wrap:anywhere}
-          .form-honey{left:0!important;top:0!important;padding:0!important;border:0!important;margin:0!important;overflow:hidden!important;clip-path:inset(50%)!important}
+          .form-honey{position:fixed!important;left:0!important;top:0!important;padding:0!important;border:0!important;margin:0!important;overflow:hidden!important;clip-path:inset(50%)!important}
           '''
           probe=r'''
           import asyncio,json
