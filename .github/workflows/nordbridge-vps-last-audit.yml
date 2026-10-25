@@ -1,74 +1,12 @@
-name: NordBridge final resource security and schedule audit
+name: Archived NordBridge last-audit
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/nordbridge-vps-last-audit.yml'
 permissions:
   contents: read
-concurrency:
-  group: nordbridge-vps-last-audit
-  cancel-in-progress: false
 jobs:
-  execute:
-    if: github.ref == 'refs/heads/main'
+  archived:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 1
     steps:
-      - name: Authorized NordBridge operation with sanitized output
-        shell: bash
-        env:
-          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          umask 077
-          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
-            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
-            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          ssh_dir="$(mktemp -d)"
-          trap 'rm -rf "$ssh_dir"' EXIT
-          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
-          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
-          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
-            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
-            exit 1
-          fi
-          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
-            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
-            exit 1
-          fi
-          ssh -F /dev/null -T -i "$ssh_dir/key" \
-            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
-            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
-            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
-            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
-            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
-          import base64,datetime,json,os,shutil,subprocess
-          from pathlib import Path
-          os.umask(0o077)
-          root=Path('/opt/nordbridge-director');backup=Path('/var/backups/nordbridge-director')/datetime.datetime.now(datetime.timezone.utc).strftime('final-monitor-%Y%m%dT%H%M%SZ');backup.mkdir(mode=0o700)
-          shutil.copy2(root/'monitor.py',backup/'monitor.py')
-          (root/'monitor.py').write_bytes(base64.b64decode('IiIiUm9vdCBzeXN0ZW1kIGhlYWx0aCB3cmFwcGVyLiBDcmVkZW50aWFscyBzdGF5IGluIGNvbnRhaW5lcnM7IG5vdGlmaWNhdGlvbnMgb3duZXItb25seS4iIiIKaW1wb3J0IGRhdGV0aW1lCmltcG9ydCBmY250bAppbXBvcnQganNvbgppbXBvcnQgb3MKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBzeXMKaW1wb3J0IHRpbWUKaW1wb3J0IHNxbGl0ZTMKaW1wb3J0IHNodXRpbAppbXBvcnQgc29ja2V0CmltcG9ydCBzc2wKClNUQVRFPVBhdGgoJy92YXIvbGliL25vcmRicmlkZ2UtZGlyZWN0b3ItbW9uaXRvci5qc29uJykKCmRlZiBjbWQoYXJncyx0aW1lb3V0PTMwKToKICAgIHJldHVybiBzdWJwcm9jZXNzLnJ1bihhcmdzLHRleHQ9VHJ1ZSxjYXB0dXJlX291dHB1dD1UcnVlLHRpbWVvdXQ9dGltZW91dCkKCmRlZiBub3RpZnkodGV4dCk6CiAgICAjIFJldXNlcyB0aGUgZXhpc3RpbmcgYXV0aGVudGljYXRlZCBvd25lcidzIFRlbGVncmFtIGRlc3RpbmF0aW9uIG9ubHkuCiAgICBjb2RlPSJpbXBvcnQgb3MsanNvbix1cmxsaWIucmVxdWVzdDsgdD1vcy5nZXRlbnYoJ1RHX1RPS0VOJyk7IGM9b3MuZ2V0ZW52KCdUR19DSEFUX0lEJyk7IGFzc2VydCB0IGFuZCBjOyByPXVybGxpYi5yZXF1ZXN0LnVybG9wZW4odXJsbGliLnJlcXVlc3QuUmVxdWVzdCgnaHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdCcrdCsnL3NlbmRNZXNzYWdlJyxkYXRhPWpzb24uZHVtcHMoeydjaGF0X2lkJzpjLCd0ZXh0JzoiK3JlcHIodGV4dCkrIn0pLmVuY29kZSgpLGhlYWRlcnM9eydDb250ZW50LVR5cGUnOidhcHBsaWNhdGlvbi9qc29uJ30pLHRpbWVvdXQ9MTUpOyBhc3NlcnQgci5zdGF0dXM9PTIwMCIKICAgIHJldHVybiBjbWQoWydkb2NrZXInLCdleGVjJywnbm9yZGJyaWRnZS1vZmZpY2UtY29yZS0xJywncHl0aG9uMycsJy1jJyxjb2RlXSkucmV0dXJuY29kZT09MAoKZGVmIG1haW4oKToKICAgIGxvY2s9b3BlbignL3J1bi9ub3JkYnJpZGdlLWRpcmVjdG9yLW1vbml0b3IubG9jaycsJ3cnKQogICAgdHJ5OmZjbnRsLmZsb2NrKGxvY2ssZmNudGwuTE9DS19FWHxmY250bC5MT0NLX05CKQogICAgZXhjZXB0IEJsb2NraW5nSU9FcnJvcjpyZXR1cm4geydvdmVybGFwJzonU0tJUFBFRCd9CiAgICBvbGQ9anNvbi5sb2FkcyhTVEFURS5yZWFkX3RleHQoKSkgaWYgU1RBVEUuZXhpc3RzKCkgZWxzZSB7fQogICAgc2ltdWxhdGVkPSctLXNpbXVsYXRlLWZhaWx1cmUnIGluIHN5cy5hcmd2CiAgICByPWNtZChbJ2RvY2tlcicsJ2V4ZWMnLCdub3JkYnJpZGdlLWRpcmVjdG9yLWRpcmVjdG9yLTEnLCdweXRob24zJywnL2FwcC90aWNrLnB5J10pCiAgICBoZWFsdGh5PXIucmV0dXJuY29kZT09MCBhbmQgbm90IHNpbXVsYXRlZAogICAgbm93PXRpbWUudGltZSgpO3Jlc3RhcnRzPVt4IGZvciB4IGluIG9sZC5nZXQoJ3Jlc3RhcnRzJyxbXSkgaWYgeD5ub3ctMzYwMF0KICAgIG1lbT17eC5zcGxpdCgnOicpWzBdOmludCh4LnNwbGl0KClbMV0pIGZvciB4IGluIFBhdGgoJy9wcm9jL21lbWluZm8nKS5yZWFkX3RleHQoKS5zcGxpdGxpbmVzKCkgaWYgbGVuKHguc3BsaXQoKSk+PTIgYW5kIHguc3BsaXQoKVsxXS5pc2RpZ2l0KCl9CiAgICByZXNvdXJjZXM9eydkaXNrX2ZyZWVfZ2liJzpyb3VuZChzaHV0aWwuZGlza191c2FnZSgnLycpLmZyZWUvMTAyNCoqMywyKSwKICAgICAgICAgICAgICAgJ21lbW9yeV9hdmFpbGFibGVfbWliJzpyb3VuZChtZW0uZ2V0KCdNZW1BdmFpbGFibGUnLDApLzEwMjQpLAogICAgICAgICAgICAgICAnbG9hZF8xbSc6b3MuZ2V0bG9hZGF2ZygpWzBdfQogICAgcmVzb3VyY2Vfb2s9cmVzb3VyY2VzWydkaXNrX2ZyZWVfZ2liJ10+PTIgYW5kIHJlc291cmNlc1snbWVtb3J5X2F2YWlsYWJsZV9taWInXT49MzAwIGFuZCByZXNvdXJjZXNbJ2xvYWRfMW0nXTwyNAogICAgc3NsX2NoZWNrcz1vbGQuZ2V0KCdzc2xfY2hlY2tzJyx7fSkKICAgIHNzbF9jaGVja19hdD1vbGQuZ2V0KCdzc2xfY2hlY2tfYXQnLDApCiAgICBpZiBub3ctc3NsX2NoZWNrX2F0PjM2MDA6CiAgICAgICAgc3NsX2NoZWNrcz17fQogICAgICAgIGZvciBob3N0IGluIFsnb2ZmaWNlLjU3LjEyOS4xODIuMjAwLnNzbGlwLmlvJywnbm9yZGJyaWRnZS1nbG9iYWwuY29tJ106CiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIHdpdGggc29ja2V0LmNyZWF0ZV9jb25uZWN0aW9uKChob3N0LDQ0MyksdGltZW91dD01KSBhcyBzOgogICAgICAgICAgICAgICAgICAgIHdpdGggc3NsLmNyZWF0ZV9kZWZhdWx0X2NvbnRleHQoKS53cmFwX3NvY2tldChzLHNlcnZlcl9ob3N0bmFtZT1ob3N0KSBhcyBzZWN1cmVkOgogICAgICAgICAgICAgICAgICAgICAgICBjZXJ0PXNlY3VyZWQuZ2V0cGVlcmNlcnQoKTtkYXlzPWludCgoc3NsLmNlcnRfdGltZV90b19zZWNvbmRzKGNlcnRbJ25vdEFmdGVyJ10pLW5vdykvODY0MDApCiAgICAgICAgICAgICAgICAgICAgICAgIHNzbF9jaGVja3NbaG9zdF09eyd2ZXJpZmllZCc6VHJ1ZSwnZGF5c19yZW1haW5pbmcnOmRheXN9CiAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZTpzc2xfY2hlY2tzW2hvc3RdPXsndmVyaWZpZWQnOkZhbHNlLCdlcnJvcic6dHlwZShlKS5fX25hbWVfX30KICAgICAgICBzc2xfY2hlY2tfYXQ9bm93CiAgICB0bHNfb2s9Ym9vbChzc2xfY2hlY2tzKSBhbmQgYWxsKHguZ2V0KCd2ZXJpZmllZCcpIGFuZCB4LmdldCgnZGF5c19yZW1haW5pbmcnLDApPjE0IGZvciB4IGluIHNzbF9jaGVja3MudmFsdWVzKCkpCiAgICBmYWlsPTAgaWYgaGVhbHRoeSBlbHNlIG9sZC5nZXQoJ2NvbnNlY3V0aXZlX2ZhaWx1cmVzJywwKSsxCiAgICBvdXQ9eyd0aW1lX3V0Yyc6ZGF0ZXRpbWUuZGF0ZXRpbWUubm93KGRhdGV0aW1lLnRpbWV6b25lLnV0YykuaXNvZm9ybWF0KCksJ2hlYWx0aHknOmhlYWx0aHksCiAgICAgICAgICdzaW11bGF0ZWQnOnNpbXVsYXRlZCwnY29uc2VjdXRpdmVfZmFpbHVyZXMnOmZhaWwsJ3Jlc3RhcnRzJzpyZXN0YXJ0c30KICAgIG91dC51cGRhdGUocmVzb3VyY2VzPXJlc291cmNlcyxyZXNvdXJjZV9vaz1yZXNvdXJjZV9vayxzc2xfY2hlY2tzPXNzbF9jaGVja3Msc3NsX2NoZWNrX2F0PXNzbF9jaGVja19hdCwKICAgICAgICAgICAgICAgZGFpbHlfcmVwb3J0X2RhdGU9b2xkLmdldCgnZGFpbHlfcmVwb3J0X2RhdGUnKSxkYWlseV9yZXBvcnRfdGVzdF9kYXRlPW9sZC5nZXQoJ2RhaWx5X3JlcG9ydF90ZXN0X2RhdGUnKSkKICAgIG91dFsnaGVhbHRoeSddPWhlYWx0aHkgYW5kIHJlc291cmNlX29rIGFuZCB0bHNfb2sKICAgIG1haWw9UGF0aCgnL29wdC9ub3JkYnJpZGdlLW1haWwtYWdlbnQvc3RhdGUuZGInKQogICAgaWYgaGVhbHRoeSBhbmQgbWFpbC5pc19maWxlKCk6CiAgICAgICAgdHJ5OgogICAgICAgICAgICB3aXRoIHNxbGl0ZTMuY29ubmVjdCgnZmlsZTonK3N0cihtYWlsKSsnP21vZGU9cm8nLHVyaT1UcnVlLHRpbWVvdXQ9NSkgYXMgYzoKICAgICAgICAgICAgICAgIHN1bW1hcnk9eydjbGFzc2lmaWNhdGlvbl9jb3VudHMnOmRpY3QoYy5leGVjdXRlKCdTRUxFQ1QgY2F0ZWdvcnksY291bnQoKikgRlJPTSBtZXNzYWdlcyBHUk9VUCBCWSBjYXRlZ29yeScpLmZldGNoYWxsKCkpLAogICAgICAgICAgICAgICAgICAgICAgICAgJ2xhc3RfcHJvY2Vzc2VkJzpjLmV4ZWN1dGUoJ1NFTEVDVCBtYXgocHJvY2Vzc2VkX2F0KSBGUk9NIG1lc3NhZ2VzJykuZmV0Y2hvbmUoKVswXSwKICAgICAgICAgICAgICAgICAgICAgICAgICdzb3VyY2UnOidFeGlzdGluZyBhdXRob3JpemVkIGNvcnBvcmF0ZSBtYWlsYm94IHJldmlldyBhZ2VudCcsJ21vZGUnOidSRVZJRVdfT05MWScsCiAgICAgICAgICAgICAgICAgICAgICAgICAnbWVzc2FnZV9sZXZlbF9jcm1fc3luYyc6RmFsc2V9CiAgICAgICAgICAgIGNvZGU9ImltcG9ydCBkaXJlY3RvciBhcyBkLGpzb24sc3lzOyBkLmF1ZGl0KCdtYWlsX3Jldmlld19zbmFwc2hvdCcsanNvbi5sb2FkKHN5cy5zdGRpbikpIgogICAgICAgICAgICBwPXN1YnByb2Nlc3MucnVuKFsnZG9ja2VyJywnZXhlYycsJy1pJywnbm9yZGJyaWRnZS1kaXJlY3Rvci1kaXJlY3Rvci0xJywncHl0aG9uMycsJy1jJyxjb2RlXSxpbnB1dD1qc29uLmR1bXBzKHN1bW1hcnkpLHRleHQ9VHJ1ZSxjYXB0dXJlX291dHB1dD1UcnVlLHRpbWVvdXQ9MjApCiAgICAgICAgICAgIG91dFsnbWFpbF9zbmFwc2hvdF9zYXZlZCddPXAucmV0dXJuY29kZT09MAogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246b3V0WydtYWlsX3NuYXBzaG90X3NhdmVkJ109RmFsc2UKICAgIGlmIGhlYWx0aHk6CiAgICAgICAgdHJ5Om91dFsnc2NoZWR1bGUnXT1qc29uLmxvYWRzKHIuc3Rkb3V0KQogICAgICAgIGV4Y2VwdDpvdXRbJ3NjaGVkdWxlJ109J0lOVkFMSURfUkVTUE9OU0UnO291dFsnaGVhbHRoeSddPUZhbHNlCiAgICBpZiBub3QgaGVhbHRoeSBhbmQgbm90IHNpbXVsYXRlZCBhbmQgbGVuKHJlc3RhcnRzKTwzOgogICAgICAgIHJlc3RhcnQ9Y21kKFsnZG9ja2VyJywncmVzdGFydCcsJ25vcmRicmlkZ2UtZGlyZWN0b3ItZGlyZWN0b3ItMSddLHRpbWVvdXQ9NTApCiAgICAgICAgaWYgcmVzdGFydC5yZXR1cm5jb2RlPT0wOm91dFsncmVzdGFydHMnXS5hcHBlbmQobm93KQogICAgaWYgKGZhaWw+PTIgb3Igc2ltdWxhdGVkIG9yIG5vdCByZXNvdXJjZV9vayBvciBub3QgdGxzX29rKSBhbmQgbm90IG9sZC5nZXQoJ2FsZXJ0ZWQnLEZhbHNlKToKICAgICAgICBvdXRbJ2FsZXJ0X3NlbnQnXT1ub3RpZnkoJ05vcmRCcmlkZ2UgRGlyZWN0b3IgbW9uaXRvcmluZzogJysoJ0NPTlRST0xMRUQgVEVTVCBGQUlMVVJFIOKAlCBubyBzZXJ2aWNlIHN0b3BwZWQuJyBpZiBzaW11bGF0ZWQgZWxzZSAnY3JpdGljYWwgY2hlY2sgZmFpbGVkOyBpbnNwZWN0IHRoZSBwcml2YXRlIG1vbml0b3Jpbmcgc3RhdGUgYW5kIHJlY29yZGVkIHJlY292ZXJ5IGF0dGVtcHRzLicpKQogICAgICAgIG91dFsnYWxlcnRlZCddPW91dFsnYWxlcnRfc2VudCddCiAgICBlbGlmIGhlYWx0aHkgYW5kIHJlc291cmNlX29rIGFuZCB0bHNfb2sgYW5kIG9sZC5nZXQoJ2FsZXJ0ZWQnKToKICAgICAgICBvdXRbJ3JlY292ZXJ5X2FsZXJ0X3NlbnQnXT1ub3RpZnkoJ05vcmRCcmlkZ2UgRGlyZWN0b3IgbW9uaXRvcmluZzogaGVhbHRoIHJlY292ZXJlZDsgZGF0YWJhc2UgYW5kIHNjaGVkdWxlciByZXNwb25kZWQuJykKICAgICAgICBvdXRbJ2FsZXJ0ZWQnXT1GYWxzZQogICAgZWxzZTpvdXRbJ2FsZXJ0ZWQnXT1vbGQuZ2V0KCdhbGVydGVkJyxGYWxzZSkKICAgIGRheT1kYXRldGltZS5kYXRldGltZS5ub3coZGF0ZXRpbWUudGltZXpvbmUudXRjKS5kYXRlKCkuaXNvZm9ybWF0KCkKICAgIGRhaWx5X3Rlc3Q9Jy0tc2VuZC1kYWlseS10ZXN0JyBpbiBzeXMuYXJndgogICAgaWYgaGVhbHRoeSBhbmQgKChkYWlseV90ZXN0IGFuZCBvbGQuZ2V0KCdkYWlseV9yZXBvcnRfdGVzdF9kYXRlJykhPWRheSkgb3IgKGRhdGV0aW1lLmRhdGV0aW1lLm5vdyhkYXRldGltZS50aW1lem9uZS51dGMpLmhvdXI9PTggYW5kIG9sZC5nZXQoJ2RhaWx5X3JlcG9ydF9kYXRlJykhPWRheSkpOgogICAgICAgIGNvZGU9ImltcG9ydCBkaXJlY3RvciBhcyBkLGpzb247IGM9ZC5kYigpOyBwcmludChqc29uLmR1bXBzKHsnam9icyc6Yy5leGVjdXRlKFwiU0VMRUNUIHN0YXR1cyxjb3VudCgqKSBuIEZST00gZGlyZWN0b3Iuam9icyBXSEVSRSBjcmVhdGVkX2F0Pm5vdygpLWludGVydmFsICcyNCBob3VycycgR1JPVVAgQlkgc3RhdHVzXCIpLmZldGNoYWxsKCksJ3RlbmRlcl9jYW5kaWRhdGVzJzpjLmV4ZWN1dGUoJ1NFTEVDVCBjb3VudCgqKSBuIEZST00gZGlyZWN0b3IudGVuZGVycycpLmZldGNob25lKClbJ24nXSwncHJvZHVjdF9kcmFmdHMnOmMuZXhlY3V0ZShcIlNFTEVDVCBjb3VudCgqKSBuIEZST00gZGlyZWN0b3IucHJvcG9zYWxzIFdIRVJFIHN0YWdlPSdEUkFGVF9PV05FUl9SRVZJRVcnXCIpLmZldGNob25lKClbJ24nXX0sZGVmYXVsdD1zdHIpKTsgYy5jbG9zZSgpIgogICAgICAgIHJlcG9ydD1jbWQoWydkb2NrZXInLCdleGVjJywnbm9yZGJyaWRnZS1kaXJlY3Rvci1kaXJlY3Rvci0xJywncHl0aG9uMycsJy1jJyxjb2RlXSkKICAgICAgICBpZiByZXBvcnQucmV0dXJuY29kZT09MDoKICAgICAgICAgICAgZGF0YT1qc29uLmxvYWRzKHJlcG9ydC5zdGRvdXQpCiAgICAgICAgICAgIHRleHQ9KCdOT1JEQlJJREdFIOKAlCAnKygn0KLQldCh0KIg0KnQntCU0JXQndCd0J7Qk9CeINCX0JLQhtCi0KMnIGlmIGRhaWx5X3Rlc3QgZWxzZSAn0KnQntCU0JXQndCd0JjQmSDQl9CS0IbQoicpKycgJytkYXkrJyBVVENcbicKICAgICAgICAgICAgICAgICAgKyfQl9Cw0LLQtNCw0L3QvdGPOiAnK2pzb24uZHVtcHMoZGF0YVsnam9icyddLGVuc3VyZV9hc2NpaT1GYWxzZSkrJ1xuJwogICAgICAgICAgICAgICAgICArJ9Cd0LXQv9C10YDQtdCy0ZbRgNC10L3RliDRgtC10L3QtNC10YDQvdGWINC80L7QttC70LjQstC+0YHRgtGWINCyIENSTTogJytzdHIoZGF0YVsndGVuZGVyX2NhbmRpZGF0ZXMnXSkrJzsg0YbQtSDQvdC1INC/0ZbQtNGC0LLQtdGA0LTQttC10L3RliDQv9C70LDRgtC90ZYg0LrQu9GW0ZTQvdGC0LguXG4nCiAgICAgICAgICAgICAgICAgICsn0J/RgNC+0LTRg9C60YLQvtCy0ZYg0YfQtdGA0L3QtdGC0LrQuCDQvdCwINC/0L7Qs9C+0LTQttC10L3QvdGPOiAnK3N0cihkYXRhWydwcm9kdWN0X2RyYWZ0cyddKSsnXG4nCiAgICAgICAgICAgICAgICAgICsn0JTQuNGA0LXQutGC0L7RgCDQvdC1INC80LDRlCDRltC90YHRgtGA0YPQvNC10L3RgtGW0LIg0LfQvtCy0L3RltGI0L3RjNC+0LPQviDQstGW0LTQv9GA0LDQstC70LXQvdC90Y8uINCd0LDQtNGF0L7QtNC20LXQvdC90Y8g0LrQvtGI0YLRltCyOiBOT1QgVkVSSUZJRUQuXG4nCiAgICAgICAgICAgICAgICAgICsn0J/QvtGI0YPQuiDQv9GW0LTRgtCy0LXRgNC00LbQtdC90LjRhSDQutC70ZbRlNC90YLRltCyLCDQstC40LrQvtC90LDQstGG0ZbQsiDRliDRhNGW0L3QsNC90YHRg9Cy0LDQvdC90Y8g0L/QvtGC0YDQtdCx0YPRlCDQv9GW0LTQutC70Y7Rh9C10L3QvdGPINC00LbQtdGA0LXQuy5cbicKICAgICAgICAgICAgICAgICAgKydodHRwczovL29mZmljZS41Ny4xMjkuMTgyLjIwMC5zc2xpcC5pb1xuaHR0cHM6Ly9ub3JkYnJpZGdlLWdsb2JhbC5jb20nKQogICAgICAgICAgICBvdXRbJ2RhaWx5X3JlcG9ydF9zZW50J109bm90aWZ5KHRleHQpCiAgICAgICAgICAgIGlmIG91dFsnZGFpbHlfcmVwb3J0X3NlbnQnXToKICAgICAgICAgICAgICAgIG91dFsnZGFpbHlfcmVwb3J0X2RhdGUnXT1kYXkKICAgICAgICAgICAgICAgIGlmIGRhaWx5X3Rlc3Q6b3V0WydkYWlseV9yZXBvcnRfdGVzdF9kYXRlJ109ZGF5CiAgICB0bXA9U1RBVEUud2l0aF9zdWZmaXgoJy50bXAnKTt0bXAud3JpdGVfdGV4dChqc29uLmR1bXBzKG91dCkpO3RtcC5jaG1vZCgwbzYwMCk7dG1wLnJlcGxhY2UoU1RBVEUpCiAgICBjbWQoWydsb2dnZXInLCctdCcsJ25vcmRicmlkZ2UtZGlyZWN0b3InLGpzb24uZHVtcHMoe2s6diBmb3Igayx2IGluIG91dC5pdGVtcygpIGlmIGshPSdyZXN0YXJ0cyd9KV0pCiAgICBwcmludChqc29uLmR1bXBzKG91dCkpCiAgICByZXR1cm4gb3V0CgppZiBfX25hbWVfXz09J19fbWFpbl9fJzptYWluKCkK'));(root/'monitor.py').chmod(0o644)
-          def run(args,stdin=None,timeout=120):
-           p=subprocess.run(args,input=stdin,text=True,capture_output=True,timeout=timeout)
-           if p.returncode:return {'error':'exit_'+str(p.returncode)}
-           try:return json.loads(p.stdout)
-           except:return p.stdout.strip()
-          out={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
-          out['monitor']=run(['python3',str(root/'monitor.py')])
-          out['daily_report_test']=run(['python3',str(root/'monitor.py'),'--send-daily-test'])
-          sql='''SELECT coalesce(json_agg(x),'[]') FROM (SELECT w.name,w.active,e.status,e."startedAt",e."stoppedAt" FROM workflow_entity w LEFT JOIN LATERAL (SELECT status,"startedAt","stoppedAt" FROM execution_entity WHERE "workflowId"=w.id ORDER BY "startedAt" DESC LIMIT 1) e ON true ORDER BY w.name) x;'''
-          out['n8n_workflows']=run(['docker','exec','-i','nordbridge-office-postgres-1','sh','-c','exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At'],sql)
-          out['reboot']=json.loads(Path('/var/lib/nordbridge-reboot-proof.json').read_text())
-          code="import director as d,json; c=d.db(); print(json.dumps({'jobs':c.execute('SELECT role,status,count(*) n FROM director.jobs GROUP BY role,status ORDER BY role,status').fetchall(),'schedules':c.execute('SELECT role,count(*) n,max(created_at)::text last FROM director.schedule_runs GROUP BY role').fetchall(),'tenders':c.execute('SELECT count(*) n FROM director.tenders').fetchone()['n'],'product_proposals':c.execute(\"SELECT count(*) n FROM director.proposals WHERE data->>'kind'='product_research'\").fetchone()['n'],'website_leads':c.execute('SELECT count(*) n FROM public.website_leads').fetchone()['n']},default=str));c.close()"
-          out['director']=run(['docker','exec','nordbridge-director-director-1','python3','-c',code])
-          out['timers']=run(['systemctl','list-timers','--all','--no-pager'])
-          Path('/var/backups/nordbridge-director/final-state.json').write_text(json.dumps(out,indent=2))
-          print('FINAL_STATE='+json.dumps(out))
-          NB_REMOTE_PAYLOAD
+      - name: Historical operation completed and archived
+        run: echo "This one-time reviewed operation is archived. Use the current server state and ops/director/README.md; do not replay an older deployment snapshot."
