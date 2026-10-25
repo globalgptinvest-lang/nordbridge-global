@@ -73,7 +73,8 @@ jobs:
                if await button.count():await button.click(force=True)
                await page.wait_for_timeout(150)
                overflow=await page.evaluate('document.documentElement.scrollWidth>innerWidth+2')
-               results.append({'path':path,'width':width,'lang':lang,'overflow':overflow})
+               detail=await page.evaluate("""()=>({doc:document.documentElement.scrollWidth,client:document.documentElement.clientWidth,body:document.body.scrollWidth,x:scrollX,min:[...document.querySelectorAll('body *')].map(e=>({tag:e.tagName,id:e.id,cls:typeof e.className==='string'?e.className:'',left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right,sw:e.scrollWidth,cw:e.clientWidth})).filter(e=>e.left< -2||e.right>innerWidth+2||e.sw>e.cw+5).slice(0,15)})""") if overflow else None
+               results.append({'path':path,'width':width,'lang':lang,'overflow':overflow,'detail':detail})
               await page.close()
             await b.close()
            print(json.dumps({'checks':results,'pass':all(not r['overflow'] for r in results)}))
