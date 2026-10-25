@@ -166,9 +166,34 @@ def website_check():
         return {'status':'DONE' if all(v['http']==200 for v in results.values()) else 'FAILED',
                 'checks':results,'forms':'NOT TESTED','payments_changed':False}
 
+def tender_import(job):
+    if job['stream']!='NORDBRIDGE':
+        return {'status':'BLOCKED','reason':'Public TED notices cannot establish private Zhikal purchases or financing demand.'}
+    source=os.environ.get('OPPORTUNITY_DSN')
+    if not source:return {'status':'BLOCKED','reason':'Read-only TED source not configured.'}
+    with psycopg.connect(source,row_factory=dict_row,connect_timeout=10) as c:
+        rows=c.execute("SELECT id,title,url,summary,created_at FROM office.opportunities WHERE direction='public_tender_signal' ORDER BY created_at DESC LIMIT 100").fetchall()
+    inserted=0;accepted=0
+    with db() as c:
+        for row in rows:
+            url=row['url'] or ''
+            if not url.startswith('https://ted.europa.eu/en/notice/'):continue
+            accepted+=1
+            payload={'title':row['title'],'summary':row['summary'],'url':url,
+                     'source_seen_at':str(row['created_at']),'qualification':'UNVERIFIED_CANDIDATE',
+                     'buyer':'NOT VERIFIED','deadline':'NOT VERIFIED','budget':'NOT VERIFIED'}
+            saved=c.execute('''INSERT INTO director.tenders(id,stream,fingerprint,source,stage,next_action,data)
+              VALUES(%s,'NORDBRIDGE',%s,%s,'UNVERIFIED_CANDIDATE','Verify deadline, buyer, budget and eligibility in official notice',%s)
+              ON CONFLICT(stream,fingerprint) DO NOTHING RETURNING id''',
+              (uuid.uuid4(),hashlib.sha256(url.encode()).hexdigest(),url,Jsonb(payload))).fetchone()
+            inserted+=bool(saved)
+    return {'status':'DONE','source':'Existing official TED connector','candidates_seen':accepted,
+            'inserted':inserted,'duplicates':accepted-inserted,'qualified':0,'paid_clients':0,'external_sent':0}
+
 def execute(job):
     role=job['role']
     if role=='self_test': return self_test(job)
+    if role=='tenders': return step(job,'official_ted_candidates',lambda:tender_import(job))
     if role=='website': return step(job,'public_http',website_check)
     if role in ('director','crm','security'):
         snap=step(job,'crm_snapshot',factual_snapshot)
@@ -223,7 +248,8 @@ app=FastAPI(title='NordBridge AI Director',docs_url=None,redoc_url=None,openapi_
 async def headers(request,call_next):
     response=await call_next(request)
     for k,v in {'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY',
-                'Referrer-Policy':'no-referrer','Cache-Control':'no-store'}.items():response.headers[k]=v
+                'Referrer-Policy':'no-referrer','Cache-Control':'no-store',
+                'Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"}.items():response.headers[k]=v
     return response
 
 def internal(request):
