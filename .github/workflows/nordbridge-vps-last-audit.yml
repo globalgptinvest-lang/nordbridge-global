@@ -1,0 +1,103 @@
+name: NordBridge final resource security and schedule audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-last-audit.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-last-audit
+  cancel-in-progress: false
+jobs:
+  execute:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Authorized NordBridge operation with sanitized output
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
+          import datetime,json,subprocess,ssl,socket,sqlite3,hashlib,os,time
+          from pathlib import Path
+          def run(args,stdin=None,timeout=120):
+           p=subprocess.run(args,input=stdin,text=True,capture_output=True,timeout=timeout)
+           if p.returncode: return {'error':'exit_'+str(p.returncode)}
+           try:return json.loads(p.stdout)
+           except:return p.stdout.strip()
+          out={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          info=run(['docker','inspect']+subprocess.check_output(['docker','ps','-q'],text=True).split())
+          out['containers']=[{'name':c['Name'],'state':c['State']['Status'],'health':c['State'].get('Health',{}).get('Status'),'restart':c['HostConfig']['RestartPolicy']['Name'],'published':c['NetworkSettings']['Ports'],'memory_limit':c['HostConfig']['Memory'],'cpu_quota':c['HostConfig']['NanoCpus']} for c in info]
+          for host in ['office.57.129.182.200.sslip.io','crm.57.129.182.200.sslip.io','n8n.57.129.182.200.sslip.io','nordbridge-global.com']:
+           try:
+            with socket.create_connection((host,443),timeout=15) as s:
+             with ssl.create_default_context().wrap_socket(s,server_hostname=host) as sock:
+              cert=sock.getpeercert();out.setdefault('tls',{})[host]={'verified':True,'not_after':cert['notAfter']}
+           except Exception as e:out.setdefault('tls',{})[host]={'verified':False,'error':type(e).__name__}
+          out['ufw']=run(['ufw','status'])
+          out['monitor_state']=json.loads(Path('/var/lib/nordbridge-director-monitor.json').read_text())
+          out['units']={}
+          for unit in ['nordbridge-director-monitor.timer','nordbridge-director-monitor.service','nordbridge-ted-connector.timer','nordbridge-ted-connector.service','nordbridge-recovery-backup.timer','nordbridge-mail-agent.timer','nordbridge-mail-agent.service']:
+           text=run(['systemctl','show',unit,'-p','ActiveState','-p','SubState','-p','LastTriggerUSec','-p','ExecMainStatus','-p','Result','-p','NextElapseUSecRealtime'])
+           out['units'][unit]=text
+          sql="SELECT json_build_object('executions_24h',count(*),'success_24h',count(*) FILTER(WHERE status='success'),'error_24h',count(*) FILTER(WHERE status='error'),'last_finished',max(\"stoppedAt\")) FROM execution_entity WHERE \"startedAt\">now()-interval '24 hours';"
+          out['n8n_executions']=run(['docker','exec','-i','nordbridge-office-postgres-1','sh','-c','exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At'],sql)
+          db=Path('/opt/nordbridge-mail-agent/state.db')
+          if db.is_file():
+           with sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True) as c:
+            out['mail_agent_categories']=c.execute('SELECT category,count(*) FROM messages GROUP BY category').fetchall()
+          out['director']=run(['docker','exec','nordbridge-director-director-1','python3','-c',"import director as d,json; c=d.db(); print(json.dumps({'jobs':c.execute('SELECT role,status,count(*) n FROM director.jobs GROUP BY role,status').fetchall(),'schedules':c.execute('SELECT role,count(*) n,max(created_at)::text last FROM director.schedule_runs GROUP BY role').fetchall(),'tenders':c.execute('SELECT count(*) n FROM director.tenders').fetchone()['n']},default=str)); c.close()"])
+          probe=r'''
+          import json,asyncio
+          from playwright.async_api import async_playwright
+          async def main():
+           out=[]
+           async with async_playwright() as p:
+            b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+            for width in [390,1365]:
+             page=await b.new_page(viewport={'width':width,'height':844})
+             await page.goto('https://nordbridge-global.com/business-financing.html',wait_until='domcontentloaded',timeout=30000)
+             for lang in ['en','uk','da','ar']:
+              await page.locator('.language-switcher [data-lang='+lang+']').click(force=True);await page.wait_for_timeout(200)
+              bad=await page.evaluate("""()=>[...document.querySelectorAll('body *')].map(e=>({tag:e.tagName,id:e.id,cls:typeof e.className==='string'?e.className:'',r:e.getBoundingClientRect()})).filter(o=>(o.r.right>innerWidth+3||o.r.left< -3)&&o.r.width>0).slice(0,12).map(o=>({tag:o.tag,id:o.id,cls:o.cls,left:o.r.left,right:o.r.right,width:o.r.width}))""")
+              out.append({'width':width,'lang':lang,'overflow':await page.evaluate('document.documentElement.scrollWidth>innerWidth+2'),'elements':bad})
+             await page.close()
+            await b.close()
+           print(json.dumps(out))
+          asyncio.run(main())
+          '''
+          out['overflow_diagnostic']=run(['docker','exec','-i','nordbridge-office-core-1','python3','-'],probe,240)
+          p=Path('/var/backups/nordbridge-director/last-audit.json');p.write_text(json.dumps(out,indent=2));p.chmod(0o600)
+          print('LAST_AUDIT='+json.dumps(out))
+          NB_REMOTE_PAYLOAD
