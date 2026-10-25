@@ -15,7 +15,7 @@ def main():
         # A transaction-scoped lock prevents parallel tick processes.
         if not c.execute('SELECT pg_try_advisory_xact_lock(71887925) ok').fetchone()['ok']:
             return {'overlap':'SKIPPED'}
-        pending=c.execute("SELECT count(*) n FROM director.jobs WHERE status IN('QUEUED','RUNNING')").fetchone()['n']
+        pending=c.execute("SELECT count(*) n FROM director.jobs WHERE status IN('QUEUED','RUNNING','WAITING')").fetchone()['n']
         if pending>20:return {'backpressure':'SKIPPED','pending':pending}
         for role,slot,task in specs:
             first=c.execute('INSERT INTO director.schedule_runs(slot,role) VALUES(%s,%s) ON CONFLICT DO NOTHING RETURNING slot',(slot,role)).fetchone()
