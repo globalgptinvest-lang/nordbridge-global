@@ -82,7 +82,10 @@ jobs:
            out['lead_briefs']=c.execute("SELECT count(*) n FROM director.proposals WHERE data->'source_evidence'->>'kind'='lead_qualification_brief'").fetchone()['n']
           print(json.dumps(out))
           '''
-          out={'research':json.loads(run(['docker','exec','-i','nordbridge-director-director-1','python3','-'],code,230))}
+          research_output=run(['docker','exec','-i','nordbridge-director-director-1','python3','-'],code,230)
+          research_lines=[line for line in research_output.splitlines() if line.strip()]
+          if not research_lines:raise RuntimeError('research_output_empty')
+          out={'research':json.loads(research_lines[-1])}
           out['daily_report_test']=json.loads(run(['python3',str(root/'monitor.py'),'--send-daily-test']))
           out['time_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
           (dest/'result.json').write_text(json.dumps(out,indent=2))
