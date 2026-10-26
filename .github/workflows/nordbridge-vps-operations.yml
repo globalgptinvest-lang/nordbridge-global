@@ -1,4 +1,4 @@
-name: NordBridge scoped intake deployment and readback
+name: NordBridge mobile preview form to PostgreSQL E2E
 on:
   workflow_dispatch:
   push:
@@ -49,65 +49,65 @@ jobs:
             -o ConnectTimeout=15 -o ConnectionAttempts=1 \
             -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
-          import base64,datetime,hashlib,json,subprocess,shutil,time,os,yaml
+          import base64,subprocess,json,datetime
           from pathlib import Path
-          def run(args,timeout=180):
-           p=subprocess.run(args,capture_output=True,text=True,timeout=timeout)
-           if p.returncode:raise RuntimeError('command_failed_'+str(p.returncode))
-           return p.stdout
-          root=Path('/home/ubuntu/nordbridge_server_crm/server_crm');api=root/'api.py';compose=root/'compose.yaml'
-          assert hashlib.sha256(api.read_bytes()).hexdigest()=='63ad7fdec9134f63e1df527c9b4170878b20a8de3566e70ba5c03e262b143bce','source_changed_review_required'
-          run(['systemctl','start','nordbridge-recovery-backup.service'],300)
-          r=json.loads(sorted(Path('/var/backups/nordbridge-maintenance').glob('*/result.json'))[-1].read_text());assert len(r['postgres'])==2 and all(x.get('restore',{}).get('status')=='WORKING' for x in r['postgres'])
-          stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ');backup=Path('/var/backups/nordbridge-director')/('intake-cutover-'+stamp);backup.mkdir(mode=0o700)
-          shutil.copy2(api,backup/'api.py');shutil.copy2(compose,backup/'compose.yaml')
-          secret=root/'.env.intake-scoped';existed=secret.exists()
-          if existed:shutil.copy2(secret,backup/'env.intake-scoped')
-          packet=Path('/root/nordbridge-intake-provision/packet.enc');packet.write_bytes(base64.b64decode('Qesmpkb8/pGgLZXW52sdWwGii8F29I3ZwDWgC5APm4K2ZU83wdqrkXNaHaIx0q6YHG29LGfKkcaVNOl47wp4ykS5ZiMHItWwKtvhvC6j2WBNoAHbPj9URD3UjOuO0/NGumnZRG9KRKwbYsbXzmwKX6BUJOMGFAyUbGyKTkFAfrDbGrOr1p7l3TQHATqmIHsSzqavMiEnw8aw7mmWhZ2H2AXGd45UooE0gAVKpbNzVgL05M49V4an/hDkaavnrePdg8JzjLBquY6DUvLwuusgLPOeGuGHnzeKZWolZ44ql3T11hdyHG9cTJiQqxwhTx/jLJ81vgB/Y8CQmZW/fLAwgu6FVhvHLKSV4QNt0aPWWNAcZQHs8pgCy/c7SHkkI7u0MkccvJ36giayPcbuBWYatWyOqy7Z/8+vhJOEpO3GQOSkf42na5+5k6FwDrw9s+AaK+/piXgicP+WqLp+DBSmelh10PW+t5DaNii38/puBkiBXGwcT/tYxMRA+hGOXZ+v'))
-          plain=run(['openssl','pkeyutl','-decrypt','-inkey','/root/nordbridge-intake-provision/transport-key.pem','-in',str(packet),'-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'])
-          keys=json.loads(plain);assert all(len(keys[x])==64 for x in ('production','test'))
-          secret.write_text('CRM_WEBSITE_INGEST_TOKEN='+keys['production']+'\nCRM_WEBSITE_TEST_TOKEN='+keys['test']+'\n');secret.chmod(0o600)
-          source=base64.b64decode('IiIiUHJpdmF0ZSBOb3JkQnJpZGdlIENSTSBBUEk7IGxvY2FsaG9zdC1vbmx5IGJ5IGRlZmF1bHQuIE5vIG1haWwgb3IgZXh0ZXJuYWwgc2VuZCBjb2RlLiIiIgppbXBvcnQgb3MKaW1wb3J0IHJlCmltcG9ydCBzZWNyZXRzCmZyb20gdHlwaW5nIGltcG9ydCBMaXRlcmFsCgppbXBvcnQgcHN5Y29wZwpmcm9tIHBzeWNvcGcucm93cyBpbXBvcnQgZGljdF9yb3cKZnJvbSBmYXN0YXBpIGltcG9ydCBEZXBlbmRzLCBGYXN0QVBJLCBIZWFkZXIsIEhUVFBFeGNlcHRpb24sIFF1ZXJ5CmZyb20gcHlkYW50aWMgaW1wb3J0IEJhc2VNb2RlbCwgRmllbGQKCmFwcCA9IEZhc3RBUEkodGl0bGU9Ik5vcmRCcmlkZ2UgcHJpdmF0ZSBDUk0iLCBkb2NzX3VybD1Ob25lLCByZWRvY191cmw9Tm9uZSwgb3BlbmFwaV91cmw9Tm9uZSkKQUdFTlRTID0gZnJvemVuc2V0KCJhbmFseXNpcyBzdXBlcnZpc29yIHRlbmRlcnMgZmluYW5jaW5nIGNybSBzZWN1cml0eSBjb250cmFjdG9ycyBtYXJrZXRpbmcgcHJvZHVjdHMgd2Vic2l0ZSBpbmRlcGVuZGVudF9hdWRpdCBwYXltZW50cyBmdWxmaWxsbWVudCBsZWdhbCBzYWxlcyIuc3BsaXQoKSkKVEFCTEVTID0gZnJvemVuc2V0KCgiRGVhbHMiLCAiQ291bnRlcnBhcnRpZXMiLCAiQWN0aXZpdHkgTG9nIiwgIkdsb2JhbCBMaXN0aW5ncyIsICJXZWJzaXRlIExlYWRzIiwgIkJpbGxpbmcgJiBQYXltZW50cyIsICJBSSBPZmZpY2UgQnJpZGdlIFF1ZXVlIikpCkpPQl9JRF9SRSA9IHJlLmNvbXBpbGUociJeW0EtWmEtejAtOV8uOi1dezgsMTIwfSQiKQoKZGVmIGRiKCk6CiAgICByZXR1cm4gcHN5Y29wZy5jb25uZWN0KG9zLmVudmlyb25bIkRBVEFCQVNFX1VSTCJdLCByb3dfZmFjdG9yeT1kaWN0X3JvdywgY29ubmVjdF90aW1lb3V0PTUpCgpkZWYgcmVxdWlyZV9hdXRoKGF1dGhvcml6YXRpb246IHN0ciB8IE5vbmUgPSBIZWFkZXIoTm9uZSkpOgogICAgZXhwZWN0ZWQgPSBvcy5nZXRlbnYoIkNSTV9BUElfVE9LRU4iLCAiIikKICAgIHJlY2VpdmVkID0gKGF1dGhvcml6YXRpb24gb3IgIiIpCiAgICBpZiAobm90IGV4cGVjdGVkIG9yIGxlbihleHBlY3RlZCkgPCAzMiBvciBub3QgcmVjZWl2ZWQuc3RhcnRzd2l0aCgiQmVhcmVyICIpCiAgICAgICAgICAgIG9yIG5vdCBzZWNyZXRzLmNvbXBhcmVfZGlnZXN0KHJlY2VpdmVkWzc6XSwgZXhwZWN0ZWQpKToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQwMSwgInVuYXV0aG9yaXplZCIpCgpkZWYgcmVxdWlyZV93ZWJzaXRlX2F1dGgoYXV0aG9yaXphdGlvbjogc3RyIHwgTm9uZSA9IEhlYWRlcihOb25lKSk6CiAgICByZWNlaXZlZCA9IChhdXRob3JpemF0aW9uIG9yICIiKQogICAgaWYgbm90IHJlY2VpdmVkLnN0YXJ0c3dpdGgoIkJlYXJlciAiKToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQwMSwgInVuYXV0aG9yaXplZCIpCiAgICB0b2tlbj1yZWNlaXZlZFs3Ol0KICAgIGZvciBrZXksc2NvcGUgaW4gKCgiQ1JNX1dFQlNJVEVfSU5HRVNUX1RPS0VOIiwicHJvZHVjdGlvbiIpLCgiQ1JNX0FQSV9UT0tFTiIsInByb2R1Y3Rpb24iKSwoIkNSTV9XRUJTSVRFX1RFU1RfVE9LRU4iLCJ0ZXN0IikpOgogICAgICAgIGV4cGVjdGVkPW9zLmdldGVudihrZXksICIiKQogICAgICAgIGlmIGxlbihleHBlY3RlZCk+PTMyIGFuZCBzZWNyZXRzLmNvbXBhcmVfZGlnZXN0KHRva2VuLGV4cGVjdGVkKToKICAgICAgICAgICAgcmV0dXJuIHNjb3BlCiAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQwMSwgInVuYXV0aG9yaXplZCIpCgpjbGFzcyBKb2JJbihCYXNlTW9kZWwpOgogICAgam9iX2lkOiBzdHIgPSBGaWVsZChtaW5fbGVuZ3RoPTgsIG1heF9sZW5ndGg9MTIwKQogICAgYWdlbnQ6IHN0cgogICAgdGFza19zdW1tYXJ5OiBzdHIgPSBGaWVsZChtaW5fbGVuZ3RoPTEwLCBtYXhfbGVuZ3RoPTQyMDApCiAgICBzb3VyY2VfY2hhbm5lbDogTGl0ZXJhbFsiR01BSUwiLCAiV0hBVFNBUFAiLCAiQ0hBVEdQVCIsICJWUFMiLCAiU1lTVEVNIl0gPSAiU1lTVEVNIgogICAgc291cmNlX21lc3NhZ2VfaWQ6IHN0ciB8IE5vbmUgPSBGaWVsZChkZWZhdWx0PU5vbmUsIG1heF9sZW5ndGg9MjQwKQogICAgZGVhbF9yZWNvcmRfaWQ6IHN0ciB8IE5vbmUgPSBGaWVsZChkZWZhdWx0PU5vbmUsIG1heF9sZW5ndGg9MTIwKQogICAgc291cmNlX2ZpbmdlcnByaW50OiBzdHIgfCBOb25lID0gRmllbGQoZGVmYXVsdD1Ob25lLCBtYXhfbGVuZ3RoPTI0MCkKICAgIG5vX2V4dGVybmFsX3NlbmQ6IExpdGVyYWxbVHJ1ZV0gPSBUcnVlCgpjbGFzcyBGaW5pc2hJbihCYXNlTW9kZWwpOgogICAgY2xhaW1fdG9rZW46IHN0ciA9IEZpZWxkKG1pbl9sZW5ndGg9MTAsIG1heF9sZW5ndGg9MTIwKQogICAgc3RhdHVzOiBMaXRlcmFsWyJET05FIiwgIkVSUk9SIiwgIkJMT0NLRUQiXQogICAgYWdlbnRfcmVzcG9uc2U6IHN0ciB8IE5vbmUgPSBGaWVsZChkZWZhdWx0PU5vbmUsIG1heF9sZW5ndGg9MTIwMDApCiAgICByZXNwb25zZV9zdGF0dXM6IExpdGVyYWxbIlJFQURZX0ZPUl9SRVZJRVciLCAiTkVFRFNfT1dORVIiLCAiRVJST1IiLCAiRFJBRlRfT05MWSJdID0gIlJFQURZX0ZPUl9SRVZJRVciCiAgICBlcnJvcl9zdW1tYXJ5OiBzdHIgfCBOb25lID0gRmllbGQoZGVmYXVsdD1Ob25lLCBtYXhfbGVuZ3RoPTEwMDApCgpjbGFzcyBXZWJzaXRlTGVhZEluKEJhc2VNb2RlbCk6CiAgICBsZWFkX2lkOiBzdHIgPSBGaWVsZChtaW5fbGVuZ3RoPTE2LCBtYXhfbGVuZ3RoPTEzMikKICAgIGNvbXBhbnk6IHN0ciA9IEZpZWxkKG1pbl9sZW5ndGg9MSwgbWF4X2xlbmd0aD0xODApCiAgICBlbWFpbDogc3RyID0gRmllbGQobWluX2xlbmd0aD01LCBtYXhfbGVuZ3RoPTI1NSkKICAgIGNvdW50cnk6IHN0ciA9IEZpZWxkKGRlZmF1bHQ9IiIsIG1heF9sZW5ndGg9MTAwKQogICAgc291cmNlX2Zvcm06IHN0ciA9IEZpZWxkKGRlZmF1bHQ9IiIsIG1heF9sZW5ndGg9MTAwKQogICAgc2VydmljZTogc3RyID0gRmllbGQoZGVmYXVsdD0iIiwgbWF4X2xlbmd0aD0xODApCiAgICBzb3VyY2VfcGFnZTogc3RyID0gRmllbGQobWluX2xlbmd0aD0yLCBtYXhfbGVuZ3RoPTI1MCkKICAgIHByaXZhY3lfY29uc2VudDogTGl0ZXJhbFtUcnVlXQoKQGFwcC5nZXQoIi9oZWFsdGgiKQpkZWYgaGVhbHRoKCk6CiAgICAjIFB1YmxpY2x5IHNhZmUsIG5vIERCIGNyZWRlbnRpYWxzLCBubyBjdXN0b21lciByZWNvcmRzLgogICAgdHJ5OgogICAgICAgIHdpdGggZGIoKSBhcyBjeDoKICAgICAgICAgICAgcm93ID0gY3guZXhlY3V0ZSgiU0VMRUNUIDEgQVMgcmVhZHkiKS5mZXRjaG9uZSgpCiAgICAgICAgcmV0dXJuIHsicmVhZHkiOiByb3dbInJlYWR5Il0gPT0gMX0KICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbig1MDMsICJ1bmF2YWlsYWJsZSIpCgpAYXBwLnBvc3QoIi92MS9qb2JzIiwgZGVwZW5kZW5jaWVzPVtEZXBlbmRzKHJlcXVpcmVfYXV0aCldKQpkZWYgcXVldWUoam9iOiBKb2JJbik6CiAgICBpZiBub3QgSk9CX0lEX1JFLmZ1bGxtYXRjaChqb2Iuam9iX2lkKSBvciBqb2IuYWdlbnQgbm90IGluIEFHRU5UUzoKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQyMiwgImludmFsaWQgYWdlbnQgb3Igam9iIElEIikKICAgIHdpdGggZGIoKSBhcyBjeDoKICAgICAgICBmb3VuZCA9IGN4LmV4ZWN1dGUoIiIiCiAgICAgICAgICAgSU5TRVJUIElOVE8gYnJpZGdlX2pvYnMoam9iX2lkLCBhZ2VudCwgdGFza19zdW1tYXJ5LCBzb3VyY2VfY2hhbm5lbCwgc291cmNlX21lc3NhZ2VfaWQsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGRlYWxfcmVjb3JkX2lkLCBzb3VyY2VfZmluZ2VycHJpbnQpCiAgICAgICAgICAgVkFMVUVTICglcywlcywlcywlcywlcywlcywlcykKICAgICAgICAgICBPTiBDT05GTElDVCBETyBOT1RISU5HIFJFVFVSTklORyBqb2JfaWQKICAgICAgICAiIiIsIChqb2Iuam9iX2lkLCBqb2IuYWdlbnQsIGpvYi50YXNrX3N1bW1hcnksIGpvYi5zb3VyY2VfY2hhbm5lbCwKICAgICAgICAgICAgICBqb2Iuc291cmNlX21lc3NhZ2VfaWQsIGpvYi5kZWFsX3JlY29yZF9pZCwgam9iLnNvdXJjZV9maW5nZXJwcmludCkpLmZldGNob25lKCkKICAgICAgICBpZiBub3QgZm91bmQ6CiAgICAgICAgICAgIGV4aXN0aW5nID0gY3guZXhlY3V0ZSgiIiIKICAgICAgICAgICAgICAgIFNFTEVDVCBqb2JfaWQgRlJPTSBicmlkZ2Vfam9icyBXSEVSRSBqb2JfaWQ9JXMgT1Igc291cmNlX2ZpbmdlcnByaW50PSVzIExJTUlUIDEKICAgICAgICAgICAgIiIiLCAoam9iLmpvYl9pZCwgam9iLnNvdXJjZV9maW5nZXJwcmludCkpLmZldGNob25lKCkKICAgICAgICAgICAgcmV0dXJuIHsiam9iX2lkIjogZXhpc3RpbmdbImpvYl9pZCJdIGlmIGV4aXN0aW5nIGVsc2Ugam9iLmpvYl9pZCwgImNyZWF0ZWQiOiBGYWxzZX0KICAgIHJldHVybiB7ImpvYl9pZCI6IGpvYi5qb2JfaWQsICJjcmVhdGVkIjogVHJ1ZX0KCkBhcHAuZ2V0KCIvdjEvam9icyIsIGRlcGVuZGVuY2llcz1bRGVwZW5kcyhyZXF1aXJlX2F1dGgpXSkKZGVmIGxpc3Rfam9icyhzdGF0dXM6IExpdGVyYWxbIlFVRVVFRCIsIkNMQUlNRUQiLCJSVU5OSU5HIiwiRE9ORSIsIkVSUk9SIiwiQkxPQ0tFRCIsIkNBTkNFTExFRCJdIHwgTm9uZSA9IE5vbmUsCiAgICAgICAgICAgICAgbGltaXQ6IGludCA9IFF1ZXJ5KDIwLCBnZT0xLCBsZT0xMDApKToKICAgIHNxbCA9ICJTRUxFQ1Qgam9iX2lkLGRpcmVjdGlvbixzdGF0dXMsYWdlbnQsdGFza19zdW1tYXJ5LGFnZW50X3Jlc3BvbnNlLHJlc3BvbnNlX3N0YXR1cyxlcnJvcl9zdW1tYXJ5LHNvdXJjZV9jaGFubmVsLHNvdXJjZV9tZXNzYWdlX2lkLGRlYWxfcmVjb3JkX2lkLHNvdXJjZV9maW5nZXJwcmludCxjcmVhdGVkX2F0LHVwZGF0ZWRfYXQgRlJPTSBicmlkZ2Vfam9icyIKICAgIHdpdGggZGIoKSBhcyBjeDoKICAgICAgICByb3dzID0gY3guZXhlY3V0ZShzcWwgKyAoIiBXSEVSRSBzdGF0dXM9JXMiIGlmIHN0YXR1cyBlbHNlICIiKSArICIgT1JERVIgQlkgY3JlYXRlZF9hdCBERVNDIExJTUlUICVzIiwKICAgICAgICAgICAgICAgICAgICAgICAgICAoKHN0YXR1cywgbGltaXQpIGlmIHN0YXR1cyBlbHNlIChsaW1pdCwpKSkuZmV0Y2hhbGwoKQogICAgcmV0dXJuIHsiam9icyI6IHJvd3N9CgpAYXBwLnBvc3QoIi92MS9qb2JzL2NsYWltIiwgZGVwZW5kZW5jaWVzPVtEZXBlbmRzKHJlcXVpcmVfYXV0aCldKQpkZWYgY2xhaW0oKToKICAgICMgU2VydmVyLXNpZGUgdHJhbnNhY3Rpb24gbG9jayBlbnN1cmVzIG9ubHkgb25lIHdvcmtlciBvd25zIGEgam9iLgogICAgdG9rZW4gPSBzZWNyZXRzLnRva2VuX3VybHNhZmUoMzIpCiAgICB3aXRoIGRiKCkgYXMgY3g6CiAgICAgICAgIyBHaXZlIHVwIGNsZWFubHkgYWZ0ZXIgdGhyZWUgdGltZWQtb3V0IGF0dGVtcHRzOyBuZXZlciByZXRyeSBmb3JldmVyLgogICAgICAgIGN4LmV4ZWN1dGUoIiIiCiAgICAgICAgICBVUERBVEUgYnJpZGdlX2pvYnMgU0VUIHN0YXR1cz0nRVJST1InLCByZXNwb25zZV9zdGF0dXM9J0VSUk9SJywKICAgICAgICAgICAgZXJyb3Jfc3VtbWFyeT0nQ2xhaW0gZXhwaXJlZCBhZnRlciBtYXhpbXVtIHRocmVlIGF0dGVtcHRzJyx1cGRhdGVkX2F0PW5vdygpCiAgICAgICAgICBXSEVSRSBzdGF0dXM9J0NMQUlNRUQnIEFORCBjbGFpbV9leHBpcmVzPG5vdygpIEFORCBhdHRlbXB0cz49MwogICAgICAgICIiIikKICAgICAgICByb3cgPSBjeC5leGVjdXRlKCIiIgogICAgICAgICAgV0lUSCBzZWxlY3RlZCBBUyAoCiAgICAgICAgICAgICBTRUxFQ1Qgam9iX2lkIEZST00gYnJpZGdlX2pvYnMKICAgICAgICAgICAgIFdIRVJFIHN0YXR1cz0nUVVFVUVEJyBPUiAoc3RhdHVzPSdDTEFJTUVEJyBBTkQgY2xhaW1fZXhwaXJlczxub3coKSBBTkQgYXR0ZW1wdHM8MykKICAgICAgICAgICAgIE9SREVSIEJZIGNyZWF0ZWRfYXQgRk9SIFVQREFURSBTS0lQIExPQ0tFRCBMSU1JVCAxCiAgICAgICAgICApIFVQREFURSBicmlkZ2Vfam9icyBBUyBqIFNFVCBzdGF0dXM9J0NMQUlNRUQnLCBjbGFpbV90b2tlbj0lcywKICAgICAgICAgICAgIGNsYWltX2V4cGlyZXM9bm93KCkraW50ZXJ2YWwgJzIwIG1pbnV0ZXMnLCBhdHRlbXB0cz1qLmF0dGVtcHRzKzEsIHVwZGF0ZWRfYXQ9bm93KCkKICAgICAgICAgIEZST00gc2VsZWN0ZWQgV0hFUkUgai5qb2JfaWQ9c2VsZWN0ZWQuam9iX2lkCiAgICAgICAgICBSRVRVUk5JTkcgai5qb2JfaWQsai5hZ2VudCxqLnRhc2tfc3VtbWFyeSxqLnNvdXJjZV9jaGFubmVsLGouc291cmNlX21lc3NhZ2VfaWQsai5jbGFpbV90b2tlbgogICAgICAgICIiIiwgKHRva2VuLCkpLmZldGNob25lKCkKICAgIHJldHVybiB7ImpvYiI6IHJvd30KCkBhcHAucG9zdCgiL3YxL2pvYnMve2pvYl9pZH0vZmluaXNoIiwgZGVwZW5kZW5jaWVzPVtEZXBlbmRzKHJlcXVpcmVfYXV0aCldKQpkZWYgZmluaXNoKGpvYl9pZDogc3RyLCB2YWx1ZTogRmluaXNoSW4pOgogICAgaWYgbm90IEpPQl9JRF9SRS5mdWxsbWF0Y2goam9iX2lkKToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQwMCwgImludmFsaWQgam9iIElEIikKICAgIGlmIHZhbHVlLnN0YXR1cyA9PSAiRE9ORSIgYW5kIG5vdCAodmFsdWUuYWdlbnRfcmVzcG9uc2Ugb3IgIiIpLnN0cmlwKCk6CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbig0MjIsICJlbXB0eSBhZ2VudCBhbnN3ZXIiKQogICAgd2l0aCBkYigpIGFzIGN4OgogICAgICAgIHJvdyA9IGN4LmV4ZWN1dGUoIiIiCiAgICAgICAgICBVUERBVEUgYnJpZGdlX2pvYnMgU0VUIHN0YXR1cz0lcywgYWdlbnRfcmVzcG9uc2U9JXMsIHJlc3BvbnNlX3N0YXR1cz0lcywKICAgICAgICAgICAgZXJyb3Jfc3VtbWFyeT0lcywgY2xhaW1fdG9rZW49TlVMTCwgY2xhaW1fZXhwaXJlcz1OVUxMLCB1cGRhdGVkX2F0PW5vdygpCiAgICAgICAgICBXSEVSRSBqb2JfaWQ9JXMgQU5EIGNsYWltX3Rva2VuPSVzIEFORCBzdGF0dXM9J0NMQUlNRUQnCiAgICAgICAgICAgIEFORCBjbGFpbV9leHBpcmVzPm5vdygpIFJFVFVSTklORyBqb2JfaWQsc3RhdHVzCiAgICAgICAgIiIiLCAodmFsdWUuc3RhdHVzLCB2YWx1ZS5hZ2VudF9yZXNwb25zZSwgdmFsdWUucmVzcG9uc2Vfc3RhdHVzLAogICAgICAgICAgICAgIHZhbHVlLmVycm9yX3N1bW1hcnksIGpvYl9pZCwgdmFsdWUuY2xhaW1fdG9rZW4pKS5mZXRjaG9uZSgpCiAgICBpZiBub3Qgcm93OgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oNDA5LCAiY2xhaW0gaW52YWxpZCBvciBleHBpcmVkIikKICAgIHJldHVybiByb3cKCkBhcHAuZ2V0KCIvdjEvcmVjb3Jkcy97dGFibGVfbmFtZX0iLCBkZXBlbmRlbmNpZXM9W0RlcGVuZHMocmVxdWlyZV9hdXRoKV0pCmRlZiByZWNvcmRzKHRhYmxlX25hbWU6IHN0ciwgbGltaXQ6IGludCA9IFF1ZXJ5KDUwLCBnZT0xLCBsZT0yMDApLCBhZnRlcjogc3RyID0gIiIpOgogICAgaWYgdGFibGVfbmFtZSBub3QgaW4gVEFCTEVTOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oNDA0LCAidW5rbm93biB0YWJsZSIpCiAgICB3aXRoIGRiKCkgYXMgY3g6CiAgICAgICAgcm93cz1jeC5leGVjdXRlKCIiIlNFTEVDVCBzb3VyY2VfcmVjb3JkX2lkLHNvdXJjZV9maWVsZHMsaW1wb3J0ZWRfYXQKICAgICAgICAgICAgICAgICAgICAgICAgICAgIEZST00gY3JtX3JlY29yZHMgV0hFUkUgc291cmNlX3RhYmxlPSVzIEFORCBzb3VyY2VfcmVjb3JkX2lkPiVzCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBPUkRFUiBCWSBzb3VyY2VfcmVjb3JkX2lkIExJTUlUICVzIiIiLCh0YWJsZV9uYW1lLGFmdGVyLGxpbWl0KSkuZmV0Y2hhbGwoKQogICAgcmV0dXJuIHsicmVjb3JkcyI6cm93cywgIm5leHQiOiByb3dzWy0xXVsic291cmNlX3JlY29yZF9pZCJdIGlmIGxlbihyb3dzKT09bGltaXQgZWxzZSBOb25lfQoKQGFwcC5wb3N0KCIvdjEvd2Vic2l0ZS1sZWFkcyIpCmRlZiB3ZWJzaXRlX2xlYWQodmFsdWU6IFdlYnNpdGVMZWFkSW4sIHNjb3BlOiBzdHIgPSBEZXBlbmRzKHJlcXVpcmVfd2Vic2l0ZV9hdXRoKSk6CiAgICBpZiBzY29wZT09J3Rlc3QnIGFuZCBub3QgKHZhbHVlLmxlYWRfaWQuc3RhcnRzd2l0aCgnV0VCLVNUQUdJTkctJykgYW5kCiAgICAgICAgdmFsdWUuY29tcGFueT09J05vcmRCcmlkZ2UgSU5URVJOQUwgU1lOVEhFVElDIFRFU1QnIGFuZAogICAgICAgIHZhbHVlLmVtYWlsLmxvd2VyKCk9PSdpbmZvQG5vcmRicmlkZ2UtZ2xvYmFsLmNvbScgYW5kIHZhbHVlLnNvdXJjZV9wYWdlPT0nL2ludGVybmFsLXRlc3QnKToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQwMywgInRlc3QgY3JlZGVudGlhbCByZXN0cmljdGVkIHRvIHN5bnRoZXRpYyBvd25lciByZWNvcmRzIikKICAgIGlmIG5vdCByZS5mdWxsbWF0Y2gociJXRUItW0EtWmEtejAtOV8tXXsxMiwxMjh9IiwgdmFsdWUubGVhZF9pZCk6CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbig0MjIsICJpbnZhbGlkIGxlYWQgSUQiKQogICAgZW1haWw9dmFsdWUuZW1haWwuc3RyaXAoKS5sb3dlcigpCiAgICBpZiBub3QgcmUuZnVsbG1hdGNoKHIiW15cc0BdK0BbXlxzQF0rXC5bQS1aYS16XXsyLDI0fSIsZW1haWwpIG9yIG5vdCB2YWx1ZS5zb3VyY2VfcGFnZS5zdGFydHN3aXRoKCIvIikgb3IgdmFsdWUuc291cmNlX3BhZ2Uuc3RhcnRzd2l0aCgiLy8iKToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKDQyMiwgImludmFsaWQgc291cmNlIG9yIGVtYWlsIikKICAgIHdpdGggZGIoKSBhcyBjeDoKICAgICAgICByb3c9Y3guZXhlY3V0ZSgiIiIKICAgICAgICAgIElOU0VSVCBJTlRPIHdlYnNpdGVfbGVhZHMobGVhZF9pZCxjb21wYW55LGVtYWlsLGNvdW50cnksc291cmNlX2Zvcm0sc2VydmljZSxzb3VyY2VfcGFnZSxwcml2YWN5X2NvbnNlbnQsZW1haWxfZG9tYWluLHN0YXR1cykKICAgICAgICAgIFZBTFVFUyAoJXMsJXMsJXMsJXMsJXMsJXMsJXMsVFJVRSwlcywlcykKICAgICAgICAgIE9OIENPTkZMSUNUKGxlYWRfaWQpIERPIE5PVEhJTkcgUkVUVVJOSU5HIGxlYWRfaWQKICAgICAgICAiIiIsKHZhbHVlLmxlYWRfaWQsdmFsdWUuY29tcGFueS5zdHJpcCgpLGVtYWlsLHZhbHVlLmNvdW50cnksdmFsdWUuc291cmNlX2Zvcm0sCiAgICAgICAgICAgICB2YWx1ZS5zZXJ2aWNlLHZhbHVlLnNvdXJjZV9wYWdlLGVtYWlsLnNwbGl0KCdAJylbLTFdLCAnSU5URVJOQUxfVEVTVCcgaWYgc2NvcGU9PSd0ZXN0JyBlbHNlICdORVcnKSkuZmV0Y2hvbmUoKQogICAgcmV0dXJuIHsibGVhZF9pZCI6dmFsdWUubGVhZF9pZCwiY3JlYXRlZCI6Ym9vbChyb3cpfQoK').decode();compile(source,'api.py','exec')
-          conf=yaml.safe_load(compose.read_text());service=conf['services']['api'];envfiles=service.get('env_file',[])
-          if isinstance(envfiles,str):envfiles=[envfiles]
-          service['env_file']=envfiles+[str(secret)] if str(secret) not in envfiles else envfiles
-          service['volumes']=[x for x in service.get('volumes',[]) if not (isinstance(x,str) and ':/app/api.py' in x)]+[str(api)+':/app/api.py:ro']
-          dc=['docker','compose','-p','nordbridge-crm','-f',str(compose)]
-          try:
-           api.write_text(source);api.chmod(0o644);compose.write_text(yaml.safe_dump(conf,sort_keys=False));compose.chmod(0o600)
-           run(dc+['config','--quiet']);run(dc+['up','-d','--no-build','--no-deps','api'],100)
-           for _ in range(20):
-            try:run(['docker','exec','nordbridge-crm-api-1','python3','-c',"import urllib.request;assert urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=5).status==200"],10);break
-            except Exception:time.sleep(2)
-           else:raise RuntimeError('crm_health_failed')
-           code="""import os,json,requests,uuid,psycopg
-          out={}
-          with requests.Session() as c:
-           c.trust_env=False
-           for kind,key in [('production','CRM_WEBSITE_INGEST_TOKEN'),('test','CRM_WEBSITE_TEST_TOKEN')]:
-            lead='WEB-STAGING-'+uuid.uuid4().hex
-            p={'lead_id':lead,'company':'NordBridge INTERNAL SYNTHETIC TEST','email':'info@nordbridge-global.com','country':'Denmark','source_form':'INTERNAL STAGING NO EXTERNAL ACTION','service':'NO COMMERCIAL ACTION - TEST','source_page':'/internal-test','privacy_consent':True}
-            h={'Authorization':'Bearer '+os.environ[key]}
-            url='https://crm.57.129.182.200.sslip.io/v1/website-leads'
-            a=c.post(url,json=p,headers=h,timeout=20);b=c.post(url,json=p,headers=h,timeout=20)
-            deny=c.get('http://127.0.0.1:8000/v1/jobs',headers=h,timeout=10)
-            bad=dict(p,company='Not an internal synthetic record')
-            invalid=c.post(url,json=bad,headers=h,timeout=10).status_code if kind=='test' else None
-            with psycopg.connect(os.environ['DATABASE_URL']) as db:
-             count=db.execute('SELECT count(*) FROM website_leads WHERE lead_id=%s',(lead,)).fetchone()[0]
-             db.execute("UPDATE website_leads SET status='INTERNAL_TEST' WHERE lead_id=%s",(lead,))
-            out[kind]={'lead_id':lead,'http':a.status_code,'created':a.json().get('created'),'duplicate_created':b.json().get('created'),'stored_count':count,'read_api_denied':deny.status_code==401,'non_synthetic_denied':invalid==403 if kind=='test' else None}
-            assert a.status_code==200 and a.json()['created'] and not b.json()['created'] and count==1 and deny.status_code==401
-            if kind=='test':assert invalid==403
-           out['unauthorized_post']=c.post(url,json=p,timeout=10).status_code
-           assert out['unauthorized_post']==401
-          print(json.dumps(out))
-          """
-           result=json.loads(run(['docker','exec','nordbridge-crm-api-1','python3','-c',code],120))
-           print('SCOPED_INTAKE_DEPLOY='+json.dumps({'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'backup':str(backup),'db_backup':r.get('backup_directory'),'tests':result}))
-          except Exception:
-           shutil.copy2(backup/'api.py',api);shutil.copy2(backup/'compose.yaml',compose)
-           if existed:shutil.copy2(backup/'env.intake-scoped',secret)
-           run(dc+['up','-d','--no-build','--no-deps','api'],100);raise
+          root=Path('/root/nordbridge-intake-provision');packet=root/'preview.enc';packet.write_bytes(base64.b64decode('FrAA/8xfWpZ1M0runxDwmza5J7QHNFrQGrr/9u8Zwurm8iEbjsOf9CoH3Z1naaxkT2YdIWfJFXwNIkY6AnZnm9niQgELlLyuqnVuiWQ9O9REMyxX4J9syAC6XMQixLoVyRfAOKeb5QOz7CKG8D0h2SNpAnObJw219UFSA6RwWVdKc9QjsnFLJAdJNBFBL2WIVcqoA7MtkkJTSKGkyNtlCjAQOT6bnekgePVWJmQ71MEHJ0Mxzb7T8OXKY03c4rV58h24QGDgpJhXZ7Q+dBxEKlQe5mP5uNeAByZvDeDbmnGHqK+ylUznVUGnNG7/hD2LX29ezVZtNAntkzEiLDJa3eDzgiEoWFYbh5Ytau6UvLiX8ckl56z/lbDNdljyOiMt93sDrUcEDivm7Di6q4/HTzlNODQQDifkzg4bNy7snM3grCemgtfQcSOLNaxeXQ+aIifghnALeH9Ls493ks1slPM8OR0CfGcJRmA23BolhYFTkqYHgfxrd39nWtUQxHwj'))
+          p=subprocess.run(['openssl','pkeyutl','-decrypt','-inkey',str(root/'transport-key.pem'),'-in',str(packet),'-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'],capture_output=True,text=True,check=True)
+          share=p.stdout.strip()
+          code=r'''
+          import asyncio,json,urllib.parse
+          from playwright.async_api import async_playwright
+          async def main():
+           async with async_playwright() as p:
+            browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+            ctx=await browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
+            async def guard(route):
+             u=route.request.url
+             if any(x in u for x in ['google-analytics.com','googletagmanager.com','formsubmit.co','stripe.com']):await route.abort()
+             else:await route.continue_()
+            await ctx.route('**/*',guard)
+            page=await ctx.new_page();await page.goto(SHARE,wait_until='domcontentloaded',timeout=45000)
+            base=urllib.parse.urlsplit(SHARE);base=base.scheme+'://'+base.netloc
+            r=await page.goto(base+'/free-tender-fit-check.html',wait_until='domcontentloaded',timeout=45000)
+            await page.wait_for_function("document.querySelector('form.lead-form')?.dataset.intakeEnabled==='true'",timeout=30000)
+            await page.wait_for_function("document.querySelector('input[name=\"cf-turnstile-response\"]')?.value.length>0",timeout=30000)
+            await page.locator('[name="Company name"]').fill('NordBridge INTERNAL SYNTHETIC TEST')
+            await page.locator('[name="Email"]').fill('info@nordbridge-global.com')
+            await page.locator('[name="Country"]').fill('Denmark')
+            await page.locator('[name="Fit check request"]').fill('INTERNAL STAGING TEST. No commercial action or external message.')
+            await page.locator('[name="privacy_consent"]').check()
+            await page.locator('form.lead-form').evaluate("""form=>form.addEventListener('submit',()=>{
+              form.querySelector('[name="Lead source page"]').value='/internal-test';
+              form.querySelector('[name="_subject"]').value='INTERNAL STAGING NO EXTERNAL ACTION';
+              const n=form.querySelector('[name="_next"]'),u=new URL(n.value);u.searchParams.set('submission','STAGING-'+u.searchParams.get('submission'));n.value=u.href;
+            })""")
+            async with page.expect_response(lambda x:x.url==base+'/api/lead' and x.request.method=='POST',timeout=30000) as response:
+             await page.locator('form.lead-form button[type="submit"]').click()
+            response=await response.value
+            body=response.request.post_data;parsed=urllib.parse.parse_qs(body)
+            headers={'Origin':base,'Content-Type':'application/x-www-form-urlencoded'}
+            replay=await ctx.request.post(base+'/api/lead',data=body,headers=headers,max_redirects=0,timeout=30000)
+            bad=dict((k,v[0]) for k,v in parsed.items());bad['cf-turnstile-response']='invalid-token'
+            invalid=await ctx.request.post(base+'/api/lead',form=bad,headers={'Origin':base},max_redirects=0,timeout=30000)
+            bad['cf-turnstile-response']='XXXX.DUMMY.TOKEN.XXXX';bad['privacy_consent']=''
+            consent=await ctx.request.post(base+'/api/lead',form=bad,headers={'Origin':base},max_redirects=0,timeout=30000)
+            origin=await ctx.request.post(base+'/api/lead',data=body,headers={'Origin':'https://untrusted.example','Content-Type':'application/x-www-form-urlencoded'},max_redirects=0,timeout=30000)
+            marker=urllib.parse.parse_qs(urllib.parse.urlsplit(parsed['_next'][0]).query)['submission'][0]
+            out={'form_http':r.status,'mobile':True,'route_enabled':True,'post_http':response.status,'replay_http':replay.status,'invalid_challenge_http':invalid.status,'missing_consent_http':consent.status,'untrusted_origin_http':origin.status,'lead_id':'WEB-'+marker,'external_messages_sent':0,'uses_official_cloudflare_fixture':True}
+            assert response.status==303 and replay.status==303 and invalid.status==403 and consent.status==400 and origin.status==403
+            await browser.close();print(json.dumps(out))
+          asyncio.run(main())
+          '''
+          r=subprocess.run(['docker','exec','-i','nordbridge-office-core-1','python3','-'],input='SHARE='+repr(share)+'\n'+code,capture_output=True,text=True,timeout=180)
+          if r.returncode:
+           # Error details are private because navigation exceptions can include the share URL.
+           err=root/'preview-e2e-error.txt';err.write_text(r.stderr);err.chmod(0o600)
+           raise RuntimeError('preview_e2e_failed_private_error_saved')
+          out=json.loads(r.stdout.strip().splitlines()[-1]);lead=out['lead_id']
+          check="import os,json,psycopg; c=psycopg.connect(os.environ['DATABASE_URL']);r=c.execute('SELECT count(*),min(status) FROM website_leads WHERE lead_id=%s',(LEAD,)).fetchone();print(json.dumps({'stored_count':r[0],'status':r[1]}));c.close()"
+          r=subprocess.run(['docker','exec','nordbridge-crm-api-1','python3','-c','LEAD='+repr(lead)+'\n'+check],capture_output=True,text=True,check=True,timeout=30)
+          out['postgres_readback']=json.loads(r.stdout);assert out['postgres_readback']=={'stored_count':1,'status':'INTERNAL_TEST'}
+          out['time_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          print('PREVIEW_INTAKE_E2E='+json.dumps(out))
           
           NB_REMOTE_PAYLOAD
