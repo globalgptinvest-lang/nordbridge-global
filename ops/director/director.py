@@ -59,6 +59,8 @@ def migrate():
           attempts int NOT NULL, reset_at timestamptz NOT NULL);
         CREATE TABLE IF NOT EXISTS director.schedule_runs(slot text PRIMARY KEY,
           role text NOT NULL, created_at timestamptz DEFAULT now());
+        CREATE TABLE IF NOT EXISTS director.research_cache(key text PRIMARY KEY,
+          payload jsonb NOT NULL, expires timestamptz NOT NULL);
         CREATE INDEX IF NOT EXISTS jobs_ready ON director.jobs(status,created_at);''')
         c.execute('''DO $$ BEGIN
           IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='director.jobs'::regclass
@@ -227,6 +229,9 @@ def tender_import(job):
 def execute(job):
     role=job['role']
     if role=='self_test': return self_test(job)
+    if role in ('leads','contractors','financing'):
+        from research import scan
+        return step(job,'official_public_research_v1',lambda:scan(job))
     if role=='tenders': return step(job,'official_ted_candidates',lambda:tender_import(job))
     if role=='website': return step(job,'public_http',website_check)
     if role=='communications':
