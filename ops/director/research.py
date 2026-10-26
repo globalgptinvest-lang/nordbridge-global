@@ -14,6 +14,8 @@ import uuid
 UK='https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages'
 GRANTS='https://api.grants.gov/v1/api/search2'
 MAX_BYTES=5*1024*1024
+# Public process checked against the official OCDS API, not an inferred customer.
+WATCHED_UK_PROCESSES=('ocds-h6vhtk-05a559',)
 SERVICE_TERMS=('bid writing','bid-writing','tender writing','tender preparation',
                'procurement consultancy','procurement support','grant writing',
                'grant application support','funding application support')
@@ -57,12 +59,21 @@ def normalize_uk(raw,now):
     description=text(tender.get('description'),10000)
     classification=tender.get('classification') or {};period=tender.get('tenderPeriod') or {}
     cpv=classification.get('id') if isinstance(classification,dict) else None
+    extra=tender.get('additionalClassifications') or [];extra=extra if isinstance(extra,list) else []
+    classifications=[classification]+extra
+    items=tender.get('items') or [];items=items if isinstance(items,list) else []
+    for item in items[:100]:
+        if isinstance(item,dict):
+            extra=item.get('additionalClassifications') or [];extra=extra if isinstance(extra,list) else []
+            classifications.extend([item.get('classification')]+extra)
+    cpvs=sorted({str(x.get('id')) for x in classifications if isinstance(x,dict) and x.get('scheme','CPV')=='CPV' and re.fullmatch(r'\d{8}',str(x.get('id','')))})
     buyer=raw.get('buyer') or {};awards=raw.get('awards') or [];parties=raw.get('parties') or []
     return {'id':identifier,'ocid':raw.get('ocid'),'title':title,'description':description,
         'buyer':text(buyer.get('name'),240) if isinstance(buyer,dict) else '',
+        'buyer_identifier':str(buyer.get('id') or '') if isinstance(buyer,dict) else '',
         'url':'https://www.find-tender.service.gov.uk/Notice/'+identifier,
         'status':tender.get('status'),'tag':raw.get('tag',[]) if isinstance(raw.get('tag',[]),list) else [],'deadline':period.get('endDate') if isinstance(period,dict) else None,
-        'value':value(tender.get('value')),'cpv':str(cpv or ''),'awards':awards if isinstance(awards,list) else [],
+        'value':value(tender.get('value')),'cpv':str(cpv or ''),'cpv_codes':cpvs,'awards':awards if isinstance(awards,list) else [],
         'parties':parties if isinstance(parties,list) else [],'checked_at':now.isoformat()},None
 
 def is_current_tender(row,now):
@@ -77,11 +88,18 @@ def need_signal(row,now):
     if not ok:return None,reason
     s=(row['title']+' '+row['description']).casefold()
     found=[term for term in SERVICE_TERMS if re.search(r'(?<!\w)'+re.escape(term)+r'(?!\w)',s)]
-    if row.get('cpv')=='79418000':found.append('CPV 79418000 procurement consultancy')
+    if row.get('cpv')=='79418000' or '79418000' in row.get('cpv_codes',[]):found.append('CPV 79418000 procurement consultancy')
     if not found:return None,'outside_document_support_scope'
     if not row.get('buyer'):return None,'buyer_missing'
     return {**row,'matched_need':found,'qualification':'EXPLICIT_PUBLIC_PROCUREMENT_NEED_REVIEW_REQUIRED',
-            'fit_verified':False,'paid_client':False},None
+            'fit_verified':False,'paid_client':False,'notice_value_is_not_nordbridge_revenue':True},None
+
+def latest_process(releases,now):
+    dated=[x for x in releases if isinstance(x,dict) and moment(x.get('date'))]
+    if not dated:return None,'process_date_not_verified'
+    latest=max(dated,key=lambda x:moment(x['date']))
+    # Never revive an old active notice when a newer cancellation exists.
+    return normalize_uk(latest,now)
 
 def suppliers(row):
     s=(row['title']+' '+row['description']).casefold()
@@ -140,10 +158,11 @@ def fetch(url,payload=None):
 def cache(key,loader):
     import director as d
     from psycopg.types.json import Jsonb
+    hour=dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d%H')
     with d.db() as c:
-        row=c.execute('SELECT payload FROM director.research_cache WHERE key=%s AND expires>now()',(key,)).fetchone()
+        row=c.execute("SELECT payload FROM director.research_cache WHERE key=%s AND expires>now() AND payload->>'cache_hour'=%s",(key,hour)).fetchone()
     if row:return row['payload']
-    payload=loader()
+    payload=loader();payload['cache_hour']=hour
     with d.db() as c:
         c.execute("INSERT INTO director.research_cache(key,payload,expires) VALUES(%s,%s,now()+interval '55 minutes') ON CONFLICT(key) DO UPDATE SET payload=EXCLUDED.payload,expires=EXCLUDED.expires",(key,Jsonb(payload)))
     return payload
@@ -162,6 +181,21 @@ def uk(stage,now):
                 'has_more':bool((body.get('links') or {}).get('next')),'checked_at':now.isoformat()}
     return cache('uk-'+stage,load)
 
+def watched_processes(now):
+    def load():
+        rows=[];scanned=0;ignored=0;errors=[]
+        for ocid in WATCHED_UK_PROCESSES[:2]:
+            try:
+                body=fetch(UK+'/'+ocid);releases=body.get('releases')
+                if not isinstance(releases,list):raise RuntimeError('uk_process_schema_changed')
+                scanned+=len(releases);ignored+=max(0,len(releases)-1)
+                row,reason=latest_process(releases,now)
+                if row:rows.append(row)
+                elif reason:errors.append(reason)
+            except Exception as exc:errors.append(type(exc).__name__)
+        return {'rows':rows,'scanned':scanned,'history_versions_ignored':ignored,'errors':errors,'checked_at':now.isoformat()}
+    return cache('uk-reviewed-processes',load)
+
 def grants(now):
     def load():
         body=fetch(GRANTS,{'rows':20,'keyword':'international','oppStatuses':'posted'})
@@ -174,14 +208,24 @@ def grants(now):
             if row:rows.append(row)
             else:rejected[reason]=rejected.get(reason,0)+1
         # Discard API session token and other unused response fields.
-        return {'rows':rows,'scanned':len(hits),'rejected':rejected,'total_hits':data.get('hitCount'),'checked_at':now.isoformat()}
+        return {'rows':rows,'scanned':len(hits),'rejected':rejected,'total_hits':data.get('hitCount'),
+                'has_more':not isinstance(data.get('hitCount'),int) or data['hitCount']>len(hits),'checked_at':now.isoformat()}
     return cache('grants-international-posted',load)
+
+def fingerprint(key):return 'RESEARCH-'+hashlib.sha256(key.encode()).hexdigest()
+
+def record_key(role,item):
+    return ('supplier:'+item['identity_key']) if role=='contractors' else ('uk-need:'+item['id']) if role=='leads' else ('grants:'+item['id'])
+
+def prioritize(records,role,existing,limit=30):
+    # Previously seen suppliers must not starve the rest of a bounded source page.
+    return sorted(records,key=lambda item:fingerprint(record_key(role,item)) in existing)[:limit]
 
 def save(c,table,stream,key,source,evidence,stage,next_action):
     import director as d
     from psycopg.types.json import Jsonb
     if table not in ('leads','companies','contractors','opportunities','proposals'):raise ValueError('invalid_entity')
-    fp='RESEARCH-'+hashlib.sha256(key.encode()).hexdigest()
+    fp=fingerprint(key)
     row=c.execute(f'''INSERT INTO director.{table}(id,stream,fingerprint,source,stage,next_action,data)
         VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(stream,fingerprint) DO NOTHING RETURNING id''',
         (uuid.uuid4(),stream,fp,source,stage,next_action,Jsonb({'source_evidence':evidence}))).fetchone()
@@ -200,6 +244,9 @@ def scan(job):
     except Exception as exc:return {'status':'BLOCKED','reason':'Official source unavailable','error_type':type(exc).__name__,'external_sent':0}
     rejected={};items=[]
     if role=='leads':
+        watch=watched_processes(now)
+        source={**source,'rows':source['rows']+watch['rows'],'scanned':source['scanned']+watch['scanned'],
+                'watchlist_errors':watch['errors'],'history_versions_ignored':watch['history_versions_ignored']}
         for row in source['rows']:
             item,reason=need_signal(row,now)
             if item:items.append(item)
@@ -212,25 +259,44 @@ def scan(job):
             else:rejected['closed_or_closing_today']=rejected.get('closed_or_closing_today',0)+1
     unique={}
     for item in items:unique.setdefault(item.get('identity_key') or item['id'],item)
-    records=list(unique.values())[:30];inserted=0;ids=[]
+    all_records=list(unique.values());inserted=0;ids=[];drafts_queued=0
     with d.db() as c:
+        draft_capacity=max(0,30-c.execute("SELECT count(*) n FROM director.jobs WHERE status IN ('QUEUED','RUNNING','WAITING')").fetchone()['n'])
+        table={'leads':'leads','contractors':'contractors','financing':'opportunities'}[role]
+        fps=[fingerprint(record_key(role,x)) for x in all_records]
+        existing={row['fingerprint'] for row in c.execute(f'SELECT fingerprint FROM director.{table} WHERE stream=%s AND fingerprint=ANY(%s)',(stream,fps)).fetchall()}
+        records=prioritize(all_records,role,existing)
         for item in records:
             if role=='leads':
-                key='uk-need:'+item['id'];url=item['url']
-                company,_=save(c,'companies',stream,'buyer:'+item['buyer'].casefold(),url,{'name':item['buyer'],'notice':url,'legal_entity_verification':'NOT VERIFIED'},'NEEDS_REVIEW','Verify official buyer identity and bidding eligibility')
+                key=record_key(role,item);url=item['url']
+                buyer_key=item.get('buyer_identifier') or url+':'+item['buyer'].casefold()
+                company,_=save(c,'companies',stream,'buyer:'+buyer_key,url,{'name':item['buyer'],'identifier':item.get('buyer_identifier'),'notice':url,'legal_entity_verification':'NOT VERIFIED'},'NEEDS_REVIEW','Verify official buyer identity and bidding eligibility')
                 item['company_id']=company
                 ident,new=save(c,'leads',stream,key,url,item,'PUBLIC_NEED_REVIEW','Verify scope, deadline, eligibility and permitted contact before proposal')
+                brief={'kind':'lead_qualification_brief','lead_id':ident,'buyer':item['buyer'],
+                       'source_notice':url,'title':item['title'],'source_deadline':item['deadline'],
+                       'website':'https://nordbridge-global.com','approval_required':True,
+                       'eligibility_verified':False,'price':None,'external_sent':0,
+                       'next_checks':['Read full documents and lot requirements','Verify NordBridge eligibility, experience, insurance and capacity','Use the permitted procurement clarification channel','Owner approval before any bid or commitment']}
+                save(c,'proposals',stream,'brief:'+key,url,brief,'DRAFT_OWNER_REVIEW','Verify documents and prepare a nonbinding owner-reviewed scope')
+                if draft_capacity>0:
+                    prompt=('Prepare a short English DRAFT ONLY based on these public facts: '+item['buyer']+'; '+item['title']+'; official notice '+url+'; source deadline '+item['deadline']+'. NordBridge eligibility and capacity are NOT VERIFIED. Do not claim them. No price, deadline promise, bid submission or commitment. Include https://nordbridge-global.com. Never send the draft.')
+                    queued=c.execute("INSERT INTO director.jobs(id,role,stream,task,fingerprint) VALUES(%s,'sales',%s,%s,%s) ON CONFLICT(fingerprint) DO NOTHING RETURNING id",(uuid.uuid4(),stream,prompt,'LEAD-DRAFT-'+ident)).fetchone()
+                    if queued:drafts_queued+=1;draft_capacity-=1
             elif role=='contractors':
-                key='supplier:'+item['identity_key'];url=item['source_notice']
+                key=record_key(role,item);url=item['source_notice']
                 ident,new=save(c,'contractors',stream,key,url,item,'AWARD_EVIDENCE_REVIEW','Verify legal identity, current capacity, eligibility and official contact')
             else:
-                key='grants:'+item['id'];url=item['url']
+                key=record_key(role,item);url=item['url']
                 ident,new=save(c,'opportunities',stream,key,url,item,'FUNDING_PROGRAMME_REVIEW','Check full programme, foreign applicant eligibility and amount; identify genuine company need separately')
             inserted+=int(new);ids.append(ident)
     return {'status':'DONE','role':role,'stream':stream,'source':'Grants.gov public API' if role=='financing' else 'UK Find a Tender public OCDS API',
         'source_checked_at':source['checked_at'],'source_records_scanned':source['scanned'],'matched_candidates':len(unique),
         'records_saved':len(ids),'inserted':inserted,'existing_refreshed':len(ids)-inserted,
         'not_saved_due_to_batch_limit':max(0,len(unique)-len(ids)),'rejected':rejected or source.get('rejected',{}),
-        'coverage_limited':source.get('has_more',False),'record_ids':ids[:5],
+        'coverage_limited':True,'more_source_pages_available':source.get('has_more',False),
+        'watchlist_errors':source.get('watchlist_errors',[]),'history_versions_ignored':source.get('history_versions_ignored',0),'record_ids':ids[:5],
+        'preview':[{k:v for k,v in row.items() if k in ('name','buyer','title','url','source_notice','deadline','deadline_date','matched_need','value')} for row in records[:3]],
+        'drafts_queued':drafts_queued,
         'scope':'Funding programmes, not company financing needs >= EUR100k' if role=='financing' else 'Evidence candidates requiring human qualification; not confirmed paid clients',
         'qualified_clients':0,'external_sent':0,'paid_api_spend':0}
