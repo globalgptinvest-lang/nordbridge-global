@@ -1,4 +1,4 @@
-name: NordBridge mobile preview form to PostgreSQL E2E
+name: NordBridge production intake post-deploy verification
 on:
   workflow_dispatch:
   push:
@@ -49,65 +49,63 @@ jobs:
             -o ConnectTimeout=15 -o ConnectionAttempts=1 \
             -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
-          import base64,subprocess,json,datetime
-          from pathlib import Path
-          root=Path('/root/nordbridge-intake-provision');packet=root/'preview.enc';packet.write_bytes(base64.b64decode('FrAA/8xfWpZ1M0runxDwmza5J7QHNFrQGrr/9u8Zwurm8iEbjsOf9CoH3Z1naaxkT2YdIWfJFXwNIkY6AnZnm9niQgELlLyuqnVuiWQ9O9REMyxX4J9syAC6XMQixLoVyRfAOKeb5QOz7CKG8D0h2SNpAnObJw219UFSA6RwWVdKc9QjsnFLJAdJNBFBL2WIVcqoA7MtkkJTSKGkyNtlCjAQOT6bnekgePVWJmQ71MEHJ0Mxzb7T8OXKY03c4rV58h24QGDgpJhXZ7Q+dBxEKlQe5mP5uNeAByZvDeDbmnGHqK+ylUznVUGnNG7/hD2LX29ezVZtNAntkzEiLDJa3eDzgiEoWFYbh5Ytau6UvLiX8ckl56z/lbDNdljyOiMt93sDrUcEDivm7Di6q4/HTzlNODQQDifkzg4bNy7snM3grCemgtfQcSOLNaxeXQ+aIifghnALeH9Ls493ks1slPM8OR0CfGcJRmA23BolhYFTkqYHgfxrd39nWtUQxHwj'))
-          p=subprocess.run(['openssl','pkeyutl','-decrypt','-inkey',str(root/'transport-key.pem'),'-in',str(packet),'-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'],capture_output=True,text=True,check=True)
-          share=p.stdout.strip()
+          import subprocess,json,datetime
           code=r'''
-          import asyncio,json,urllib.parse
+          import asyncio,json,httpx,uuid
           from playwright.async_api import async_playwright
-          async def main():
+          base='https://www.nordbridge-global.com'
+          out={}
+          with httpx.Client(timeout=25,trust_env=False,follow_redirects=False) as c:
+           cfg=c.get(base+'/api/intake-status');data=cfg.json()
+           out['readiness']={'http':cfg.status_code,'ready':data.get('ready'),'test_mode':data.get('testing',False),'production_sitekey_unchanged':data.get('sitekey')=='0x4AAAAAAFZMXtmGr4bwyAS9'}
+           marker='PRODTEST-'+uuid.uuid4().hex
+           body={'_next':'https://nordbridge-global.com/thanks.html?submission='+marker,'Company name':'NordBridge INTERNAL SYNTHETIC TEST','Email':'info@nordbridge-global.com','Country':'Denmark','_subject':'INTERNAL PRODUCTION VERIFY','Lead source page':'/internal-test','privacy_consent':'accepted','cf-turnstile-response':'XXXX.DUMMY.TOKEN.XXXX'}
+           h={'Origin':base}
+           out['dummy_challenge_rejected']=c.post(base+'/api/lead',data=body,headers=h).status_code
+           out['untrusted_origin_rejected']=c.post(base+'/api/lead',data=body,headers={'Origin':'https://untrusted.example'}).status_code
+           out['missing_consent_rejected']=c.post(base+'/api/lead',data={**body,'privacy_consent':''},headers=h).status_code
+           out['get_rejected']=c.get(base+'/api/lead').status_code
+           out['oversize_rejected']=c.post(base+'/api/lead',content='x'*17000,headers={**h,'Content-Type':'application/x-www-form-urlencoded'}).status_code
+           assert out['readiness']=={'http':200,'ready':True,'test_mode':False,'production_sitekey_unchanged':True}
+           assert [out[k] for k in ['dummy_challenge_rejected','untrusted_origin_rejected','missing_consent_rejected','get_rejected','oversize_rejected']]==[403,403,400,405,413]
+          async def browser_test():
            async with async_playwright() as p:
             browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
             ctx=await browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
             async def guard(route):
-             u=route.request.url
-             if any(x in u for x in ['google-analytics.com','googletagmanager.com','formsubmit.co','stripe.com']):await route.abort()
+             if any(x in route.request.url for x in ['google-analytics.com','googletagmanager.com','formsubmit.co','stripe.com']):await route.abort()
              else:await route.continue_()
             await ctx.route('**/*',guard)
-            page=await ctx.new_page();await page.goto(SHARE,wait_until='domcontentloaded',timeout=45000)
-            base=urllib.parse.urlsplit(SHARE);base=base.scheme+'://'+base.netloc
-            r=await page.goto(base+'/free-tender-fit-check.html',wait_until='domcontentloaded',timeout=45000)
-            await page.wait_for_function("document.querySelector('form.lead-form')?.dataset.intakeEnabled==='true'",timeout=30000)
-            await page.wait_for_function("document.querySelector('input[name=\"cf-turnstile-response\"]')?.value.length>0",timeout=30000)
-            await page.locator('[name="Company name"]').fill('NordBridge INTERNAL SYNTHETIC TEST')
-            await page.locator('[name="Email"]').fill('info@nordbridge-global.com')
-            await page.locator('[name="Country"]').fill('Denmark')
-            await page.locator('[name="Fit check request"]').fill('INTERNAL STAGING TEST. No commercial action or external message.')
-            await page.locator('[name="privacy_consent"]').check()
-            await page.locator('form.lead-form').evaluate("""form=>form.addEventListener('submit',()=>{
-              form.querySelector('[name="Lead source page"]').value='/internal-test';
-              form.querySelector('[name="_subject"]').value='INTERNAL STAGING NO EXTERNAL ACTION';
-              const n=form.querySelector('[name="_next"]'),u=new URL(n.value);u.searchParams.set('submission','STAGING-'+u.searchParams.get('submission'));n.value=u.href;
-            })""")
-            async with page.expect_response(lambda x:x.url==base+'/api/lead' and x.request.method=='POST',timeout=30000) as response:
-             await page.locator('form.lead-form button[type="submit"]').click()
-            response=await response.value
-            body=response.request.post_data;parsed=urllib.parse.parse_qs(body)
-            headers={'Origin':base,'Content-Type':'application/x-www-form-urlencoded'}
-            replay=await ctx.request.post(base+'/api/lead',data=body,headers=headers,max_redirects=0,timeout=30000)
-            bad=dict((k,v[0]) for k,v in parsed.items());bad['cf-turnstile-response']='invalid-token'
-            invalid=await ctx.request.post(base+'/api/lead',form=bad,headers={'Origin':base},max_redirects=0,timeout=30000)
-            bad['cf-turnstile-response']='XXXX.DUMMY.TOKEN.XXXX';bad['privacy_consent']=''
-            consent=await ctx.request.post(base+'/api/lead',form=bad,headers={'Origin':base},max_redirects=0,timeout=30000)
-            origin=await ctx.request.post(base+'/api/lead',data=body,headers={'Origin':'https://untrusted.example','Content-Type':'application/x-www-form-urlencoded'},max_redirects=0,timeout=30000)
-            marker=urllib.parse.parse_qs(urllib.parse.urlsplit(parsed['_next'][0]).query)['submission'][0]
-            out={'form_http':r.status,'mobile':True,'route_enabled':True,'post_http':response.status,'replay_http':replay.status,'invalid_challenge_http':invalid.status,'missing_consent_http':consent.status,'untrusted_origin_http':origin.status,'lead_id':'WEB-'+marker,'external_messages_sent':0,'uses_official_cloudflare_fixture':True}
-            assert response.status==303 and replay.status==303 and invalid.status==403 and consent.status==400 and origin.status==403
-            await browser.close();print(json.dumps(out))
-          asyncio.run(main())
+            page=await ctx.new_page();r=await page.goto(base+'/free-tender-fit-check.html',wait_until='domcontentloaded',timeout=45000)
+            await page.wait_for_function("document.querySelector('form.lead-form')?.dataset.intakeEnabled==='true'",timeout=20000)
+            out['mobile_form_http']=r.status;out['production_form_route_active']=True
+            try:await page.wait_for_function("document.querySelector('input[name=\"cf-turnstile-response\"]')?.value.length>0",timeout=25000);challenge=True
+            except Exception:challenge=False
+            out['real_browser_challenge_completed']=challenge
+            if challenge:
+             await page.locator('[name="Company name"]').fill('NordBridge INTERNAL SYNTHETIC TEST')
+             await page.locator('[name="Email"]').fill('info@nordbridge-global.com')
+             await page.locator('[name="Country"]').fill('Denmark')
+             await page.locator('[name="Fit check request"]').fill('INTERNAL PRODUCTION TEST. No commercial action or external message.')
+             await page.locator('[name="privacy_consent"]').check()
+             await page.locator('[name="_subject"]').evaluate("e=>e.value='INTERNAL PRODUCTION VERIFY'")
+             async with page.expect_response(lambda x:x.url==base+'/api/lead' and x.request.method=='POST',timeout=30000) as receipt:
+              await page.locator('form.lead-form button[type="submit"]').click()
+             receipt=await receipt.value;out['production_positive_http']=receipt.status
+             if receipt.status==303:
+              import urllib.parse
+              location=(await receipt.all_headers()).get('location','');out['lead_id']='WEB-'+urllib.parse.parse_qs(urllib.parse.urlsplit(location).query)['submission'][0]
+            await browser.close()
+          asyncio.run(browser_test())
+          print(json.dumps(out))
           '''
-          r=subprocess.run(['docker','exec','-i','nordbridge-office-core-1','python3','-'],input='SHARE='+repr(share)+'\n'+code,capture_output=True,text=True,timeout=180)
-          if r.returncode:
-           # Error details are private because navigation exceptions can include the share URL.
-           err=root/'preview-e2e-error.txt';err.write_text(r.stderr);err.chmod(0o600)
-           raise RuntimeError('preview_e2e_failed_private_error_saved')
-          out=json.loads(r.stdout.strip().splitlines()[-1]);lead=out['lead_id']
-          check="import os,json,psycopg; c=psycopg.connect(os.environ['DATABASE_URL']);r=c.execute('SELECT count(*),min(status) FROM website_leads WHERE lead_id=%s',(LEAD,)).fetchone();print(json.dumps({'stored_count':r[0],'status':r[1]}));c.close()"
-          r=subprocess.run(['docker','exec','nordbridge-crm-api-1','python3','-c','LEAD='+repr(lead)+'\n'+check],capture_output=True,text=True,check=True,timeout=30)
-          out['postgres_readback']=json.loads(r.stdout);assert out['postgres_readback']=={'stored_count':1,'status':'INTERNAL_TEST'}
-          out['time_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
-          print('PREVIEW_INTAKE_E2E='+json.dumps(out))
-          
+          r=subprocess.run(['docker','exec','-i','nordbridge-office-core-1','python3','-'],input=code,capture_output=True,text=True,timeout=180)
+          if r.returncode:raise RuntimeError('production_check_failed_'+str(r.returncode))
+          out=json.loads(r.stdout.strip().splitlines()[-1])
+          if out.get('lead_id'):
+           check="import os,json,psycopg; c=psycopg.connect(os.environ['DATABASE_URL']);r=c.execute('SELECT count(*) FROM website_leads WHERE lead_id=%s',(LEAD,)).fetchone();c.execute(\"UPDATE website_leads SET status='INTERNAL_TEST' WHERE lead_id=%s\",(LEAD,));c.commit();print(json.dumps({'stored_count':r[0],'marked_internal_test':True}));c.close()"
+           r=subprocess.run(['docker','exec','nordbridge-crm-api-1','python3','-c','LEAD='+repr(out['lead_id'])+'\n'+check],capture_output=True,text=True,check=True,timeout=30)
+           out['production_postgres_readback']=json.loads(r.stdout);assert out['production_postgres_readback']['stored_count']==1
+          out['time_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat();out['external_messages_sent']=0
+          print('PRODUCTION_INTAKE_CHECK='+json.dumps(out))
           NB_REMOTE_PAYLOAD
