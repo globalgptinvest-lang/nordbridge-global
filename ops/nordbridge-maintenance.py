@@ -18,6 +18,11 @@ import urllib.request
 
 BASE = Path('/var/backups/nordbridge-maintenance')
 
+class RestoreVerificationError(RuntimeError):
+    def __init__(self, phase, exit_code=None, sqlstates=None, reason=None):
+        super().__init__('restore_verification_failed')
+        self.details={'phase':phase,'exit_code':exit_code,'sqlstates':sqlstates or [],'reason':reason}
+
 def command(argv, timeout=60, stdin=None):
     r = subprocess.run(argv, input=stdin, capture_output=True, text=True, timeout=timeout)
     if r.returncode:
@@ -47,26 +52,34 @@ def schema_counts(container, database):
 def restore_verify(c, dump, expected):
     tag='nb-verify-'+secrets.token_hex(6)
     user='audit_'+secrets.token_hex(4)
+    phase='create_isolated_container'
     try:
         command(['docker','run','-d','--name',tag,'--network','none','--memory','768m','--cpus','1','--pids-limit','128',
             '--tmpfs','/var/lib/postgresql/data:rw,nosuid,size=1g','-e','PGDATA=/var/lib/postgresql/data',
             '-e','POSTGRES_HOST_AUTH_METHOD=trust','-e','POSTGRES_USER='+user,c['Image']])
-        ready=False
+        phase='wait_for_database';ready=False
         for _ in range(30):
-            r=subprocess.run(['docker','exec',tag,'pg_isready','-U',user],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=5)
+            # The image's temporary initialization server accepts Unix sockets only.
+            # Require TCP so restore cannot race its shutdown/restart transition.
+            r=subprocess.run(['docker','exec',tag,'pg_isready','-h','127.0.0.1','-U',user],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=5)
             if r.returncode==0: ready=True; break
             time.sleep(1)
         if not ready: raise RuntimeError('restore_container_not_ready')
+        phase='restore_sql'
         with dump.open('rb') as stream:
-            r=subprocess.run(['docker','exec','-i',tag,'psql','-X','-v','ON_ERROR_STOP=1','-U',user,'-d','postgres'],
-                stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=900)
-        if r.returncode: raise RuntimeError('dump_restore_failed')
-        restored=json.loads(command(['docker','exec',tag,'psql','-X','-A','-t','-U',user,'-d','postgres','-c',
+            r=subprocess.run(['docker','exec','-i',tag,'psql','-h','127.0.0.1','-X','-v','ON_ERROR_STOP=1','-v','VERBOSITY=sqlstate','-v','SHOW_CONTEXT=never','-U',user,'-d','postgres'],
+                stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=900)
+        if r.returncode:
+            codes=re.findall(r'(?:ERROR|FATAL|PANIC):\s+([A-Z0-9]{5})\b',r.stderr or '')
+            reason='server_connection_unavailable' if any(x in (r.stderr or '').lower() for x in ['server closed the connection','connection to server was lost','server terminated abnormally','connection to server','no such file or directory']) else 'psql_restore_error'
+            raise RestoreVerificationError(phase,r.returncode,codes,reason)
+        phase='verify_restored_databases'
+        restored=json.loads(command(['docker','exec',tag,'psql','-h','127.0.0.1','-X','-A','-t','-U',user,'-d','postgres','-c',
             "SELECT coalesce(json_agg(datname),'[]') FROM pg_database WHERE NOT datistemplate;"]))
         if not set(expected).issubset(restored): raise RuntimeError('restored_databases_missing')
-        checks=[]
+        phase='verify_restored_application';checks=[]
         for database in expected:
-            q=['docker','exec',tag,'psql','-X','-A','-t','-U',user,'-d',database,'-c']
+            q=['docker','exec',tag,'psql','-h','127.0.0.1','-X','-A','-t','-U',user,'-d',database,'-c']
             tables=json.loads(command(q+["SELECT json_build_object('director',to_regclass('director.jobs') IS NOT NULL,'n8n',to_regclass('public.workflow_entity') IS NOT NULL);"]))
             if tables['director']:
                 counts=json.loads(command(q+["SELECT json_build_object('jobs',(SELECT count(*) FROM director.jobs),'test_results',(SELECT count(*) FROM director.jobs WHERE role='self_test' AND status='DONE'),'test_companies',(SELECT count(*) FROM director.companies WHERE stream='TEST'));"]))
@@ -77,6 +90,10 @@ def restore_verify(c, dump, expected):
                 if n<1:raise RuntimeError('restored_n8n_workflows_missing')
                 checks.append({'n8n_workflows_restored':n})
         return {'status':'WORKING','source_databases_present':len(expected),'scope':'logical_restore_database_and_application_evidence','application_checks':checks}
+    except RestoreVerificationError:raise
+    except Exception as exc:
+        reason=str(exc) if isinstance(exc,RuntimeError) and re.fullmatch(r'[a-z_]+(?::[a-z_]+)?',str(exc)) else type(exc).__name__
+        raise RestoreVerificationError(phase,reason=reason) from None
     finally:
         subprocess.run(['docker','rm','-f','-v',tag],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=60)
 
@@ -200,7 +217,8 @@ def run():
                 item['databases'].append(result)
             except Exception:item['databases'].append({'status':'FAILED'})
         try:item['restore']=restore_verify(c,dump,dbs)
-        except Exception:item['restore']={'status':'FAILED','scope':'isolated_restore_test'}
+        except RestoreVerificationError as exc:item['restore']={'status':'FAILED','scope':'isolated_restore_test',**exc.details}
+        except Exception as exc:item['restore']={'status':'FAILED','scope':'isolated_restore_test','reason':type(exc).__name__}
         report['postgres'].append(item)
     for c in cs:
         if kind(c) in ['n8n','worker','core','crm','ollama']:
