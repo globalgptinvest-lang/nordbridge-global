@@ -27,6 +27,23 @@ def backup_status(base=Path('/var/backups/nordbridge-maintenance'),now=None):
                 'reason':None if good and 0<=age<=26 else 'restore_test_failed' if not good else 'backup_stale'}
     except (OSError,ValueError,KeyError,TypeError):return {'healthy':False,'reason':'backup_report_unreadable'}
 
+def intake_status(fetch_json=None):
+    def read(url):
+        import urllib.request
+        with urllib.request.urlopen(url,timeout=8) as response:
+            return json.loads(response.read(16384))
+    fetch_json=read if fetch_json is None else fetch_json
+    try:
+        website=fetch_json('https://www.nordbridge-global.com/api/intake-status')
+        crm=fetch_json('https://crm.57.129.182.200.sslip.io/health')
+        ready=isinstance(website,dict) and website.get('ready') is True and not website.get('testing',False)
+        database=isinstance(crm,dict) and crm.get('ready') is True
+        return {'healthy':ready and database,'website_ready':ready,'crm_database_ready':database,
+                'scope':'HTTPS availability; does not submit customer records or prove a real CAPTCHA completion'}
+    except Exception as exc:
+        return {'healthy':False,'error_type':type(exc).__name__,'scope':'HTTPS availability only'}
+
+
 def cmd(args,timeout=30):
     return subprocess.run(args,text=True,capture_output=True,timeout=timeout)
 
@@ -50,11 +67,12 @@ def main():
                'load_1m':os.getloadavg()[0]}
     resource_ok=resources['disk_free_gib']>=2 and resources['memory_available_mib']>=300 and resources['load_1m']<24
     backup=backup_status(now=now);backup_ok=backup['healthy']
+    intake=intake_status();intake_ok=intake['healthy']
     ssl_checks=old.get('ssl_checks',{})
     ssl_check_at=old.get('ssl_check_at',0)
     if now-ssl_check_at>3600:
         ssl_checks={}
-        for host in ['office.57.129.182.200.sslip.io','nordbridge-global.com']:
+        for host in ['office.57.129.182.200.sslip.io','nordbridge-global.com','crm.57.129.182.200.sslip.io']:
             try:
                 with socket.create_connection((host,443),timeout=5) as s:
                     with ssl.create_default_context().wrap_socket(s,server_hostname=host) as secured:
@@ -69,7 +87,8 @@ def main():
     out.update(resources=resources,resource_ok=resource_ok,ssl_checks=ssl_checks,ssl_check_at=ssl_check_at,
                daily_report_date=old.get('daily_report_date'),daily_report_test_date=old.get('daily_report_test_date'))
     out['backup']=backup
-    out['healthy']=healthy and resource_ok and tls_ok and backup_ok
+    out['website_intake']=intake
+    out['healthy']=healthy and resource_ok and tls_ok and backup_ok and intake_ok
     mail=Path('/opt/nordbridge-mail-agent/state.db')
     if healthy and mail.is_file():
         try:
@@ -88,10 +107,10 @@ def main():
     if not healthy and not simulated and len(restarts)<3:
         restart=cmd(['docker','restart','nordbridge-director-director-1'],timeout=50)
         if restart.returncode==0:out['restarts'].append(now)
-    if (fail>=2 or simulated or not resource_ok or not tls_ok or not backup_ok) and not old.get('alerted',False):
+    if (fail>=2 or simulated or not resource_ok or not tls_ok or not backup_ok or not intake_ok) and not old.get('alerted',False):
         out['alert_sent']=notify('NordBridge Director monitoring: '+('CONTROLLED TEST FAILURE — no service stopped.' if simulated else 'critical check failed; inspect the private monitoring state and recorded recovery attempts.'))
         out['alerted']=out['alert_sent']
-    elif healthy and resource_ok and tls_ok and backup_ok and old.get('alerted'):
+    elif healthy and resource_ok and tls_ok and backup_ok and intake_ok and old.get('alerted'):
         out['recovery_alert_sent']=notify('NordBridge Director monitoring: health recovered; database and scheduler responded.')
         out['alerted']=False
     else:out['alerted']=old.get('alerted',False)
@@ -106,6 +125,7 @@ def main():
                   +'Завдання: '+json.dumps(data['jobs'],ensure_ascii=False)+'\n'
                   +'Неперевірені тендерні можливості в CRM: '+str(data['tender_candidates'])+'; це не підтверджені платні клієнти.\n'
                   +'Потреби на кваліфікацію: '+str(data['lead_candidates'])+'; постачальники для перевірки: '+str(data['contractor_candidates'])+'; програми фінансування: '+str(data['funding_programmes'])+'\n'
+                  +'Доступність захищеного прийому заявок: '+('OK' if intake_ok else 'FAILED')+'\n'
                   +'Продуктові чернетки на погодження: '+str(data['product_drafts'])+'\n'
                   +'Директор не має інструментів зовнішнього відправлення. Надходження коштів: NOT VERIFIED.\n'
                   +'Джерела UK/Grants.gov підключені. Потрібна перевірка відповідності. Грантові програми не є компаніями, які шукають фінансування; приватний потік Zhikal окремий.\n'
@@ -120,3 +140,4 @@ def main():
     return out
 
 if __name__=='__main__':main()
+
