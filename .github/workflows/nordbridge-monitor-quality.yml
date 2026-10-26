@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - "automation/**"
+      - "ops/director/**"
+      - "ops/nordbridge-maintenance.py"
       - ".github/workflows/nordbridge-monitor-quality.yml"
   push:
     branches: [main]
     paths:
       - "automation/**"
+      - "ops/director/**"
+      - "ops/nordbridge-maintenance.py"
       - ".github/workflows/nordbridge-monitor-quality.yml"
 permissions:
   contents: read
@@ -22,9 +26,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Verify scripts compile
-        run: python -m compileall -q automation/public_monitor.py automation/contact_guard.py automation/tests
+        run: python -m compileall -q automation/public_monitor.py automation/contact_guard.py automation/tests ops/director ops/nordbridge-maintenance.py
       - name: Offline synthetic-source regression tests
         run: python -m unittest discover -s automation/tests -v
+      - name: Director source validation and backup failure regressions
+        run: python -m unittest discover -s ops/director -p "test_*.py" -v
       - name: Verify no outbound or CRM writing added to monitoring script
         shell: bash
         run: |
