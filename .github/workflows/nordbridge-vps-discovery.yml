@@ -79,3 +79,5 @@ jobs:
           NB_REMOTE_PAYLOAD
 
 # rerun parity inspection
+
+# capture next source state
