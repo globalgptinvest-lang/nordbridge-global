@@ -33,7 +33,7 @@ jobs:
           trap 'rm -rf "$ssh_dir"' EXIT
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
-          unset VPS_SSH_PRIVATE_KEY VPS_SSH_KNOWN_HOSTS
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
           if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
             echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
             exit 1
