@@ -137,7 +137,10 @@ def grant_hit(row,now):
     title=text(row.get('title'),350)
     if not title:return None,'missing_title'
     return {'id':identifier,'title':title,'agency':text(row.get('agencyName'),240),
-            'number':row.get('number'),'deadline_date':deadline.isoformat(),
+            'number':row.get('number'),'source_deadline_date':deadline.isoformat(),
+            'deadline_date':None if deadline.year>=2099 else deadline.isoformat(),
+            'deadline_requires_review':deadline.year>=2099,
+            'deadline_note':'Far-future source date; verify actual application window in full notice' if deadline.year>=2099 else 'Source calendar date; timezone unverified',
             'deadline_timezone':'NOT VERIFIED','status':'posted','checked_at':now.isoformat(),
             'url':'https://www.grants.gov/search-results-detail/'+identifier,
             'record_kind':'FUNDING_PROGRAMME_NOT_BORROWER','award_value':None,
@@ -210,7 +213,7 @@ def grants(now):
         # Discard API session token and other unused response fields.
         return {'rows':rows,'scanned':len(hits),'rejected':rejected,'total_hits':data.get('hitCount'),
                 'has_more':not isinstance(data.get('hitCount'),int) or data['hitCount']>len(hits),'checked_at':now.isoformat()}
-    return cache('grants-international-posted',load)
+    return cache('grants-international-posted-v2',load)
 
 def fingerprint(key):return 'RESEARCH-'+hashlib.sha256(key.encode()).hexdigest()
 
@@ -255,7 +258,7 @@ def scan(job):
         for row in source['rows']:items.extend(suppliers(row))
     else:
         for row in source['rows']:
-            if row['deadline_date']>now.date().isoformat():items.append(row)
+            if row.get('deadline_requires_review') or (row.get('deadline_date') and row['deadline_date']>now.date().isoformat()):items.append(row)
             else:rejected['closed_or_closing_today']=rejected.get('closed_or_closing_today',0)+1
     unique={}
     for item in items:unique.setdefault(item.get('identity_key') or item['id'],item)
@@ -296,7 +299,9 @@ def scan(job):
         'not_saved_due_to_batch_limit':max(0,len(unique)-len(ids)),'rejected':rejected or source.get('rejected',{}),
         'coverage_limited':True,'more_source_pages_available':source.get('has_more',False),
         'watchlist_errors':source.get('watchlist_errors',[]),'history_versions_ignored':source.get('history_versions_ignored',0),'record_ids':ids[:5],
-        'preview':[{k:v for k,v in row.items() if k in ('name','buyer','title','url','source_notice','deadline','deadline_date','matched_need','value')} for row in records[:3]],
+        'preview':[{k:v for k,v in row.items() if k in ('name','buyer','title','url','source_notice','deadline','deadline_date','source_deadline_date','deadline_requires_review','matched_need','value')} for row in records[:3]],
+        'deadline_review_required':sum(bool(x.get('deadline_requires_review')) for x in records),
         'drafts_queued':drafts_queued,
         'scope':'Funding programmes, not company financing needs >= EUR100k' if role=='financing' else 'Evidence candidates requiring human qualification; not confirmed paid clients',
         'qualified_clients':0,'external_sent':0,'paid_api_spend':0}
+
