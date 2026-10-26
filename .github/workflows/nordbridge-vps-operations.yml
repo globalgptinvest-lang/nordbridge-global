@@ -82,7 +82,19 @@ jobs:
           out={'research':json.loads(run(['docker','exec','-i','nordbridge-director-director-1','python3','-'],code,180))}
           backup=json.loads(run(['python3',str(root/'maintenance.py')],timeout=1800).splitlines()[0]);out['backup']={k:backup[k] for k in ['time_utc','backup_directory','postgres']}
           out['monitor']=json.loads(run(['python3',str(root/'monitor.py')]))
-          out['health']=json.loads(run(['docker','exec','nordbridge-director-director-1','python3','-c',"import urllib.request,json; print(json.loads(urllib.request.urlopen('http://127.0.0.1:8000/health').read()))"]))
+          out['health']=json.loads(run(['docker','exec','nordbridge-director-director-1','python3','-c',"import urllib.request,json; print(json.dumps(json.loads(urllib.request.urlopen('http://127.0.0.1:8000/health').read())))"]))
+          probe=r"""
+          import httpx,json
+          u='https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/ocds-h6vhtk-05a559'
+          with httpx.Client(timeout=25,trust_env=False) as c:
+           r=c.get(u);r.raise_for_status();p=r.json();rows=[]
+           for x in p.get('releases',[]):
+            t=x.get('tender') or {}
+            rows.append({'id':x.get('id'),'date':x.get('date'),'tag':x.get('tag'),'title':t.get('title'),'status':t.get('status'),'deadline':t.get('tenderPeriod'),'buyer':x.get('buyer'),'value':t.get('value'),'classification':t.get('classification'),'additional':t.get('additionalClassifications'),'item_classifications':[i.get('classification') for i in t.get('items',[])][:20],'item_additional':[i.get('additionalClassifications') for i in t.get('items',[])][:10],'description':t.get('description','')[:2000]})
+           print(json.dumps({'url':u,'http':r.status_code,'releases':rows}))
+          """
+          try:out['watchlist_probe']=json.loads(run(['docker','exec','-i','nordbridge-director-director-1','python3','-'],probe,60))
+          except Exception as e:out['watchlist_probe']={'error':type(e).__name__}
           out['time_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
           (dest/'result.json').write_text(json.dumps(out,indent=2))
           print('RESEARCH_PROGRESS_PROOF='+json.dumps(out))
