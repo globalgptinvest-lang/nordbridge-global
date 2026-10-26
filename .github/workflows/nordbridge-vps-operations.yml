@@ -56,7 +56,7 @@ jobs:
           prepared=[]
           for name,expected_ast,url,digest in replacements:
            p=root/name
-           assert hashlib.sha256(ast.dump(ast.parse(p.read_text())).encode()).hexdigest()==expected_ast,'source_changed_review_required_'+name
+           actual_ast=hashlib.sha256(ast.dump(ast.parse(p.read_text())).encode()).hexdigest();print('SOURCE_AST_'+name+'='+actual_ast);assert actual_ast==expected_ast,'source_changed_review_required_'+name
            opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
            with opener.open(url,timeout=25) as response:new=response.read(200000)
            assert hashlib.sha256(new).hexdigest()==digest,'reviewed_source_checksum_mismatch'
@@ -80,3 +80,5 @@ jobs:
 # reviewed rerun after private source parity check
 
 # retry after current parity capture
+
+# diagnostic AST hash only
