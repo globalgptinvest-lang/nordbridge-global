@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const lead=require('../../api/lead.js');
 const status=require('../../api/intake-status.js');
 const {normalizedLead,submissionToken,parseBody}=lead.__test;
-const envNames=['AIRTABLE_PERSONAL_ACCESS_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY','NORDBRIDGE_CRM_API_URL','NORDBRIDGE_CRM_API_TOKEN'];
+const envNames=['AIRTABLE_PERSONAL_ACCESS_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY','NORDBRIDGE_CRM_API_URL','NORDBRIDGE_CRM_API_TOKEN','VERCEL_ENV','VERCEL_URL','NORDBRIDGE_INTAKE_TEST_MODE'];
 const envOriginal=Object.fromEntries(envNames.map(k=>[k,process.env[k]]));
 const origFetch=global.fetch;
 afterEach(()=>{
@@ -185,4 +185,39 @@ test('Server selected but down => 503; no fallback to Airtable',async()=>{
   assert.equal(r.headers.Location,undefined);
   assert.equal(calls.length,2);
   assert.ok(!calls.some(url=>url.includes('airtable.com')));
+});
+
+
+test('Only exact VPS HTTPS host is allowed with clean origin URL',()=>{
+ for(const u of ['https://crm.57.129.182.200.sslip.io','https://crm.57.129.182.200.sslip.io/'])assert.equal(lead.__test.isApprovedCrmUrl(u),true);
+ for(const u of ['https://crm.1.2.3.4.sslip.io','http://crm.57.129.182.200.sslip.io','https://crm.57.129.182.200.sslip.io.evil.example','https://user@crm.57.129.182.200.sslip.io','https://crm.57.129.182.200.sslip.io/path','https://crm.57.129.182.200.sslip.io?token=x'])assert.equal(lead.__test.isApprovedCrmUrl(u),false);
+});
+function staging(){
+ configured();process.env.VERCEL_ENV='preview';process.env.NORDBRIDGE_INTAKE_TEST_MODE='1';
+ process.env.VERCEL_URL='nordbridge-synthetic.vercel.app';
+ process.env.TURNSTILE_SECRET_KEY='1x0000000000000000000000000000000AA';
+}
+test('Official Turnstile fixture requires explicit isolated preview configuration',async()=>{
+ staging();assert.equal(lead.__test.stagingTestMode(),true);
+ assert.equal(lead.__test.allowedOrigin('https://nordbridge-synthetic.vercel.app'),true);
+ assert.equal(lead.__test.allowedOrigin('https://another.vercel.app'),false);
+ global.fetch=async()=>({ok:true,json:async()=>({success:true,hostname:'localhost'})});
+ assert.equal(await lead.__test.validateTurnstile(process.env.TURNSTILE_SECRET_KEY,'XXXX.DUMMY.TOKEN.XXXX',''),true);
+ process.env.VERCEL_ENV='production';
+ assert.equal(lead.__test.stagingTestMode(),false);
+ assert.equal(lead.__test.allowedOrigin('https://nordbridge-synthetic.vercel.app'),false);
+ assert.equal(await lead.__test.validateTurnstile(process.env.TURNSTILE_SECRET_KEY,'XXXX.DUMMY.TOKEN.XXXX',''),false);
+ const r=response();await lead(request(),r);assert.equal(r.statusCode,503);
+ const ready=response();status({method:'GET'},ready);assert.equal(ready.body.ready,false);
+});
+test('Real production configuration keeps hostname checks and rejects dummy fixture',async()=>{
+ configured();process.env.VERCEL_ENV='production';process.env.NORDBRIDGE_INTAKE_TEST_MODE='1';
+ process.env.TURNSTILE_SITE_KEY='0xREALPRODUCTIONSITEKEY';
+ global.fetch=async()=>({ok:true,json:async()=>({success:true,hostname:'localhost'})});
+ assert.equal(lead.__test.stagingTestMode(),false);
+ assert.equal(await lead.__test.validateTurnstile('synthetic-secret','XXXX.DUMMY.TOKEN.XXXX',''),false);
+});
+test('Readiness and write route agree on exact VPS host',()=>{
+ configured();process.env.NORDBRIDGE_CRM_API_URL='https://crm.57.129.182.200.sslip.io';process.env.NORDBRIDGE_CRM_API_TOKEN='x'.repeat(64);
+ const r=response();status({method:'GET'},r);assert.equal(r.body.ready,true);
 });
