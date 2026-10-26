@@ -80,7 +80,7 @@ function isApprovedCrmUrl(value) {
   try {
     const url = new URL(value);
     return url.protocol === 'https:' &&
-      /^(crm|office)\.nordbridge-global\.com$/.test(url.hostname) &&
+      (/^(crm|office)\.nordbridge-global\.com$/.test(url.hostname) || url.hostname === 'crm.57.129.182.200.sslip.io') &&
       !url.port && (url.pathname === '/' || url.pathname === '') &&
       !url.username && !url.password && !url.search && !url.hash;
   } catch (_) {return false;}
@@ -114,6 +114,21 @@ async function serverCrm(fields, endpoint, token) {
   } finally {clearTimeout(timer);}
 }
 
+function stagingTestMode() {
+  return process.env.VERCEL_ENV==='preview' && process.env.NORDBRIDGE_INTAKE_TEST_MODE==='1' &&
+    process.env.TURNSTILE_SECRET_KEY==='1x0000000000000000000000000000000AA' &&
+    process.env.TURNSTILE_SITE_KEY==='1x00000000000000000000AA';
+}
+function allowedOrigin(origin) {
+  if(ALLOWED_ORIGINS.has(origin))return true;
+  return stagingTestMode() && /^[a-zA-Z0-9.-]+\.vercel\.app$/.test(process.env.VERCEL_URL||'') &&
+    origin==='https://'+process.env.VERCEL_URL;
+}
+function productionTestKey() {
+  return process.env.VERCEL_ENV==='production' &&
+    (process.env.TURNSTILE_SECRET_KEY==='1x0000000000000000000000000000000AA' ||
+     process.env.TURNSTILE_SITE_KEY==='1x00000000000000000000AA');
+}
 async function validateTurnstile(secret,response,ip) {
   if(!response || response.length>2500) return false;
   const params=new URLSearchParams({secret,response});
@@ -126,7 +141,8 @@ async function validateTurnstile(secret,response,ip) {
     });
     if(!result.ok) return false;
     const answer=await result.json();
-    return answer.success===true && ['nordbridge-global.com','www.nordbridge-global.com'].includes(answer.hostname);
+    return answer.success===true && (['nordbridge-global.com','www.nordbridge-global.com'].includes(answer.hostname) ||
+      (stagingTestMode() && response==='XXXX.DUMMY.TOKEN.XXXX'));
   } finally {clearTimeout(abort);}
 }
 function failure(res,status) {
@@ -139,11 +155,11 @@ function failure(res,status) {
 async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST') return res.status(405).send('Method not allowed');
-  if(!ALLOWED_ORIGINS.has(String(req.headers.origin||''))) return failure(res,403);
+  if(!allowedOrigin(String(req.headers.origin||''))) return failure(res,403);
   const token=process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN, secret=process.env.TURNSTILE_SECRET_KEY;
   const crmUrl=process.env.NORDBRIDGE_CRM_API_URL, crmToken=process.env.NORDBRIDGE_CRM_API_TOKEN;
   const serverMode=Boolean(crmUrl || crmToken);
-  if(!secret || !process.env.TURNSTILE_SITE_KEY ||
+  if(productionTestKey() || !secret || !process.env.TURNSTILE_SITE_KEY ||
     (serverMode ? (!isApprovedCrmUrl(crmUrl) || !crmToken || crmToken.length<32) : !token)) return failure(res,503);
   if(Number(req.headers['content-length']||0)>MAX_BYTES) return failure(res,413);
   let body,fields;
@@ -177,4 +193,5 @@ async function handler(req,res) {
   }
 }
 module.exports=handler;
-module.exports.__test={parseBody,normalizedLead,submissionToken,clean,validateTurnstile,isApprovedCrmUrl,serverCrm};
+module.exports.__test={parseBody,normalizedLead,submissionToken,clean,validateTurnstile,isApprovedCrmUrl,serverCrm,stagingTestMode,allowedOrigin,productionTestKey};
+
