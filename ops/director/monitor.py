@@ -14,6 +14,19 @@ import ssl
 
 STATE=Path('/var/lib/nordbridge-director-monitor.json')
 
+def backup_status(base=Path('/var/backups/nordbridge-maintenance'),now=None):
+    now=time.time() if now is None else now
+    try:
+        paths=sorted(base.glob('*/result.json'))
+        if not paths:return {'healthy':False,'reason':'no_completed_backup'}
+        data=json.loads(paths[-1].read_text())
+        stamp=datetime.datetime.fromisoformat(data['time_utc']).timestamp()
+        age=round((now-stamp)/3600,2)
+        good=len(data.get('postgres',[]))==2 and all(x.get('restore',{}).get('status')=='WORKING' for x in data['postgres'])
+        return {'healthy':good and 0<=age<=26,'age_hours':age,'backup_directory':data.get('backup_directory'),
+                'reason':None if good and 0<=age<=26 else 'restore_test_failed' if not good else 'backup_stale'}
+    except (OSError,ValueError,KeyError,TypeError):return {'healthy':False,'reason':'backup_report_unreadable'}
+
 def cmd(args,timeout=30):
     return subprocess.run(args,text=True,capture_output=True,timeout=timeout)
 
@@ -36,6 +49,7 @@ def main():
                'memory_available_mib':round(mem.get('MemAvailable',0)/1024),
                'load_1m':os.getloadavg()[0]}
     resource_ok=resources['disk_free_gib']>=2 and resources['memory_available_mib']>=300 and resources['load_1m']<24
+    backup=backup_status(now=now);backup_ok=backup['healthy']
     ssl_checks=old.get('ssl_checks',{})
     ssl_check_at=old.get('ssl_check_at',0)
     if now-ssl_check_at>3600:
@@ -54,7 +68,8 @@ def main():
          'simulated':simulated,'consecutive_failures':fail,'restarts':restarts}
     out.update(resources=resources,resource_ok=resource_ok,ssl_checks=ssl_checks,ssl_check_at=ssl_check_at,
                daily_report_date=old.get('daily_report_date'),daily_report_test_date=old.get('daily_report_test_date'))
-    out['healthy']=healthy and resource_ok and tls_ok
+    out['backup']=backup
+    out['healthy']=healthy and resource_ok and tls_ok and backup_ok
     mail=Path('/opt/nordbridge-mail-agent/state.db')
     if healthy and mail.is_file():
         try:
@@ -73,10 +88,10 @@ def main():
     if not healthy and not simulated and len(restarts)<3:
         restart=cmd(['docker','restart','nordbridge-director-director-1'],timeout=50)
         if restart.returncode==0:out['restarts'].append(now)
-    if (fail>=2 or simulated or not resource_ok or not tls_ok) and not old.get('alerted',False):
+    if (fail>=2 or simulated or not resource_ok or not tls_ok or not backup_ok) and not old.get('alerted',False):
         out['alert_sent']=notify('NordBridge Director monitoring: '+('CONTROLLED TEST FAILURE — no service stopped.' if simulated else 'critical check failed; inspect the private monitoring state and recorded recovery attempts.'))
         out['alerted']=out['alert_sent']
-    elif healthy and resource_ok and tls_ok and old.get('alerted'):
+    elif healthy and resource_ok and tls_ok and backup_ok and old.get('alerted'):
         out['recovery_alert_sent']=notify('NordBridge Director monitoring: health recovered; database and scheduler responded.')
         out['alerted']=False
     else:out['alerted']=old.get('alerted',False)
