@@ -77,3 +77,5 @@ jobs:
                   print(f'NB_ENCRYPTED_DISCOVERY_{index // 2000:05d}=' + encoded[index:index + 2000])
           print('DISCOVERY_ENCRYPTED=COMPLETE')
           NB_REMOTE_PAYLOAD
+
+# rerun parity inspection
