@@ -259,6 +259,8 @@ def execute(job):
                 'delegation':delegation,'scope':'Plan plus four durable read-only department checks; commercial sending remains disconnected.'}
     if role in ('sales','legal','marketing'):
         d=step(job,'draft',lambda:local_model('Role: '+role+'\nTask supplied by owner: '+job['task']))
+        if role=='sales' and 'https://nordbridge-global.com' not in d.get('draft',''):
+            d['draft']=d.get('draft','')+'\n\nhttps://nordbridge-global.com'
         return {'status':'DONE','draft':d,'approval_required':True,'external_sent':0,'facts_verified':False}
     return {'status':'BLOCKED','reason':{
         'leads':'No validated demand feed connected to this role; tender notices are not paid clients.',
