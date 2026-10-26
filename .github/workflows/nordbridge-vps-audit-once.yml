@@ -1,0 +1,61 @@
+name: NordBridge VPS safe infrastructure audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-audit-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-audit-once
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Authorized sanitized VPS audit
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$VPS_SSH_PRIVATE_KEY"; test -n "$VPS_KNOWN_HOSTS"
+          d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$d/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$d/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          ssh-keygen -y -P '' -f "$d/key" >/dev/null
+          ssh-keygen -l -f "$d/known_hosts" >/dev/null
+          ssh -F /dev/null -T -i "$d/key" -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$d/known_hosts" -o ConnectTimeout=15 -o ConnectionAttempts=1 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_AUDIT'
+          import subprocess, json, os, re
+          def cmd(s, timeout=20):
+              p=subprocess.run(s, shell=True, text=True, capture_output=True, timeout=timeout)
+              return p.stdout.strip(), p.returncode
+          def one(label, s):
+              out, rc=cmd(s)
+              print(label+'='+(' '.join(out.splitlines()) if out else ('RC'+str(rc))))
+          one('HOSTNAME','hostname')
+          one('OS','. /etc/os-release && printf "%s %s" "$ID" "$VERSION_ID"')
+          one('KERNEL','uname -r')
+          one('UPTIME','uptime -p')
+          one('CPU','nproc')
+          one('MEMORY','free -m | awk "/^Mem:/ {print \"total=\"$2 \"MB available=\"$7 \"MB\"}"')
+          one('SWAP','free -m | awk "/^Swap:/ {print \"total=\"$2 \"MB used=\"$3 \"MB\"}"')
+          one('DISK','df -hP / | awk "NR==2 {print \"size=\"$2 \" used=\"$3 \" avail=\"$4 \" use=\"$5}"')
+          one('LOAD','cat /proc/loadavg | awk "{print \"1m=\"$1 \" 5m=\"$2 \" 15m=\"$3}"')
+          one('DOCKER_SERVICE','systemctl is-active docker; systemctl is-enabled docker 2>/dev/null || true')
+          one('FIREWALL','ufw status 2>/dev/null | head -n 8 || true')
+          one('LISTENING','ss -ltnH | awk "{print $4}" | sort -u')
+          one('DNS','getent hosts nordbridge-global.com crm.57.129.182.200.sslip.io | awk "{print $1 \" -> \" $2}"')
+          one('CONTAINERS','docker ps --format "{{.Names}}|{{.Status}}" | sort')
+          one('RESTART_POLICIES','docker inspect -f "{{.Name}}|{{.HostConfig.RestartPolicy.Name}}" $(docker ps -q) 2>/dev/null | sed "s#^/##" | sort')
+          one('TIMERS','systemctl list-timers --all --no-legend 2>/dev/null | grep -Ei "nordbridge|director|monitor|backup" | head -n 20 || true')
+          one('SERVICES','systemctl is-active nordbridge-recovery-backup.service 2>/dev/null || true')
+          one('BACKUPS','find /var/backups/nordbridge-maintenance -mindepth 2 -maxdepth 2 -name result.json -type f -printf "%T@ %p\\n" 2>/dev/null | sort -nr | head -n 3')
+          one('ERRORS','journalctl -p err -b --no-pager -n 10 2>/dev/null | sed -E "s/[0-9]{4}-[0-9:-]+/TIME/g" | tr "\\n" " " || true')
+          print('AUDIT_STATUS=COMPLETED')
+          NB_AUDIT
