@@ -78,3 +78,5 @@ jobs:
           NB_REMOTE_PAYLOAD
 
 # reviewed rerun after private source parity check
+
+# retry after current parity capture
