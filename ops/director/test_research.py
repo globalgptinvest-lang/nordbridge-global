@@ -52,5 +52,28 @@ class ResearchParserTests(unittest.TestCase):
             self.assertIsNone(r.grant_hit({'id':'123','title':'Programme','oppStatus':status,'closeDate':date},NOW)[0])
     def test_invalid_notice_identifier_cannot_build_source_link(self):
         self.assertEqual(r.normalize_uk({'id':'../../../private','tender':{'title':'Test'}},NOW)[1],'invalid_notice_id')
+    def test_bounded_batches_eventually_process_unseen_candidates(self):
+        records=[{'identity_key':str(i)} for i in range(61)];known=set();seen=[]
+        for _ in range(3):
+            batch=r.prioritize(records,'contractors',known)
+            seen.extend(x['identity_key'] for x in batch)
+            known.update(r.fingerprint(r.record_key('contractors',x)) for x in batch)
+        self.assertEqual(len(set(seen)),61)
+    def test_old_records_refresh_when_no_new_candidates_exist(self):
+        records=[{'id':str(i)} for i in range(40)]
+        known={r.fingerprint(r.record_key('leads',x)) for x in records}
+        self.assertEqual(r.prioritize(records,'leads',known),records[:30])
+    def test_first_batch_is_bounded_and_preserves_source_order(self):
+        records=[{'id':str(i)} for i in range(100)]
+        self.assertEqual(r.prioritize(records,'financing',set()),records[:30])
+    def test_lot_additional_cpv_is_not_ignored(self):
+        raw={'id':'000001-2026','tag':['tender'],'buyer':{'name':'Buyer'},'tender':{'title':'Consultancy','status':'active','tenderPeriod':{'endDate':'2026-11-09T15:00:00Z'},'items':[{'additionalClassifications':[{'scheme':'CPV','id':'79418000'}]}]}}
+        row,_=r.normalize_uk(raw,NOW)
+        self.assertIsNotNone(r.need_signal(row,NOW)[0])
+    def test_new_cancellation_does_not_revive_old_tender(self):
+        records=[{'id':'000001-2026','date':'2026-10-20T00:00:00Z','tender':{'title':'Bid writing','status':'active'}},{'id':'000002-2026','date':'2026-10-25T00:00:00Z','tender':{'title':'Bid writing','status':'cancelled'}}]
+        row,_=r.latest_process(records,NOW)
+        self.assertEqual(row['status'],'cancelled')
+        self.assertIsNone(r.need_signal(row,NOW)[0])
 
 if __name__=='__main__':unittest.main()
