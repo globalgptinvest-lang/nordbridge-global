@@ -82,7 +82,7 @@ def restore_verify(c, dump, expected):
             q=['docker','exec',tag,'psql','-h','127.0.0.1','-X','-A','-t','-U',user,'-d',database,'-c']
             tables=json.loads(command(q+["SELECT json_build_object('director',to_regclass('director.jobs') IS NOT NULL,'n8n',to_regclass('public.workflow_entity') IS NOT NULL);"]))
             if tables['director']:
-                counts=json.loads(command(q+["SELECT json_build_object('jobs',(SELECT count(*) FROM director.jobs),'test_results',(SELECT count(*) FROM director.jobs WHERE role='self_test' AND status='DONE'),'test_companies',(SELECT count(*) FROM director.companies WHERE stream='TEST'));"]))
+                counts=json.loads(command(q+["SELECT json_build_object('jobs',(SELECT count(*) FROM director.jobs),'test_results',(SELECT count(*) FROM director.jobs WHERE role='self_test' AND status='DONE'),'test_companies',(SELECT count(*) FROM director.companies WHERE stream='TEST'),'contractors',(SELECT count(*) FROM director.contractors),'funding_programmes',(SELECT count(*) FROM director.opportunities WHERE stream='FINANCING' AND data->'source_evidence'->>'record_kind'='FUNDING_PROGRAMME_NOT_BORROWER'));"]))
                 if counts['test_results']<1 or counts['test_companies']<1:raise RuntimeError('restored_director_test_evidence_missing')
                 checks.append({'director_restored':counts})
             if tables['n8n']:
