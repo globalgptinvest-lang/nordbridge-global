@@ -1,12 +1,81 @@
-name: Archived NordBridge operations
+name: NordBridge website intake preflight
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-operations.yml'
 permissions:
   contents: read
+concurrency:
+  group: nordbridge-vps-operations
+  cancel-in-progress: false
 jobs:
-  archived:
+  execute:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 30
     steps:
-      - name: Reviewed one-time operation completed
-        run: echo "Use current server files and ops/director/README.md. Historical deployment snapshots must not overwrite newer fixes."
+      - name: Authorized NordBridge operation with sanitized output
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -z "$VPS_SSH_PRIVATE_KEY" || -z "$VPS_KNOWN_HOSTS" ]]; then
+            echo "::error::BLOCKED: configure VPS_SSH_PRIVATE_KEY and verified VPS_KNOWN_HOSTS in Actions secrets; install the matching public key for workagent."
+            echo "VPS_SSH_ACCESS=BLOCKED_MISSING_CONFIGURATION" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          if ! ssh-keygen -y -P '' -f "$ssh_dir/key" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: private key is invalid or requires an interactive passphrase."
+            exit 1
+          fi
+          if ! ssh-keygen -l -f "$ssh_dir/known_hosts" >/dev/null 2>&1; then
+            echo "::error::BLOCKED: known_hosts is invalid; verify the host key through the VPS console."
+            exit 1
+          fi
+          ssh -F /dev/null -T -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
+            -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_REMOTE_PAYLOAD'
+          import json,subprocess,datetime,hashlib
+          from pathlib import Path
+          def run(args,timeout=40):
+           p=subprocess.run(args,capture_output=True,text=True,timeout=timeout)
+           if p.returncode:raise RuntimeError('command_failed_'+str(p.returncode))
+           return p.stdout
+          out={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          info=json.loads(run(['docker','inspect','nordbridge-crm-api-1']))[0]
+          out['mounts']=[{'source':x['Source'],'destination':x['Destination']} for x in info['Mounts']]
+          out['compose']={k:v for k,v in info['Config']['Labels'].items() if k in ('com.docker.compose.project.config_files','com.docker.compose.project.working_dir')}
+          out['environment_keys']=[x.split('=',1)[0] for x in info['Config']['Env']]
+          probe='''import httpx,json,socket
+          out={}
+          with httpx.Client(timeout=20,trust_env=False) as c:
+           for u in ['https://nordbridge-global.com/api/intake-status','https://nordbridge-global.com/','https://crm.57.129.182.200.sslip.io/health','https://crm.nordbridge-global.com/health']:
+            try:
+             r=c.get(u);out[u]={'http':r.status_code,'server':r.headers.get('server'),'vercel':bool(r.headers.get('x-vercel-id')),'json':r.json() if 'application/json' in r.headers.get('content-type','') else None}
+            except Exception as e:out[u]={'error':type(e).__name__}
+          out['dns']=list({x[4][0] for x in socket.getaddrinfo('nordbridge-global.com',443)})
+          print(json.dumps(out))
+          '''
+          out['public']=json.loads(run(['docker','exec','nordbridge-director-director-1','python3','-c',probe],120))
+          code="import pathlib,hashlib,json; p=pathlib.Path('/app/main.py');print(json.dumps({'app_files':[x.name for x in pathlib.Path('/app').glob('*.py')]}))"
+          out['api_files']=json.loads(run(['docker','exec','nordbridge-crm-api-1','python3','-c',code]))
+          root=Path('/root/nordbridge-intake-provision');root.mkdir(mode=0o700,exist_ok=True)
+          key=root/'transport-key.pem'
+          if not key.exists():run(['openssl','genpkey','-algorithm','RSA','-pkeyopt','rsa_keygen_bits:3072','-out',str(key)],40);key.chmod(0o600)
+          out['transport_public_key']=run(['openssl','pkey','-in',str(key),'-pubout'])
+          print('INTAKE_AUDIT_RESULT='+json.dumps(out))
+          NB_REMOTE_PAYLOAD
