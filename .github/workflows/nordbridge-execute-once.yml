@@ -1,0 +1,48 @@
+name: NordBridge execute approved full task
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-execute-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-execute-once
+  cancel-in-progress: false
+jobs:
+  execute:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Execute safe full controller
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$VPS_SSH_PRIVATE_KEY"; test -n "$VPS_KNOWN_HOSTS"
+          d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$d/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$d/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          ssh-keygen -y -P '' -f "$d/key" >/dev/null
+          ssh-keygen -l -f "$d/known_hosts" >/dev/null
+          ssh -F /dev/null -T -i "$d/key" -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$d/known_hosts" -o ConnectTimeout=15 -o ConnectionAttempts=1 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_EXEC'
+          import base64,hashlib,json,subprocess,tempfile,urllib.request
+          from pathlib import Path
+          u='https://api.github.com/repos/globalgptinvest-lang/nordbridge-global/contents/ops/nordbridge-full-autonomy.sh?ref=d3fc43416cbc0776b01ad5f695bb32709dc77161'
+          req=urllib.request.Request(u,headers={'Accept':'application/vnd.github+json','User-Agent':'NordBridge-execute'})
+          with urllib.request.urlopen(req,timeout=25) as r: p=json.loads(r.read(200000))
+          s=base64.b64decode(p['content'])
+          assert hashlib.sha256(s).hexdigest()=='ad3878d5bebe149fc2a468e13a72021ad91820ff9d2d72951586cc9c31d29e26'
+          with tempfile.TemporaryDirectory() as t:
+              f=Path(t)/'controller.sh'; f.write_bytes(s); f.chmod(0o750)
+              assert subprocess.run(['bash','-n',str(f)],capture_output=True,timeout=30).returncode==0
+              q=subprocess.run(['bash',str(f),'--full'],capture_output=True,text=True,timeout=900)
+              for line in q.stdout.splitlines():
+                  if line.startswith(('NORDBRIDGE_AUTONOMY_','DOCKER=','CONTAINERS=','DIRECTOR_MONITOR=','WEBSITE_INTAKE=','BACKUP=','AUTONOMY_TIMER=')): print(line)
+              raise SystemExit(q.returncode)
+          NB_EXEC
