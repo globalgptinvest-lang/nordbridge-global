@@ -1,0 +1,52 @@
+name: NordBridge VPS resource recheck
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nordbridge-vps-resource-recheck.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nordbridge-vps-resource-recheck
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Authorized resource recheck
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$VPS_SSH_PRIVATE_KEY"; test -n "$VPS_KNOWN_HOSTS"
+          d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$d/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$d/known_hosts"
+          unset VPS_SSH_PRIVATE_KEY VPS_KNOWN_HOSTS
+          ssh-keygen -y -P '' -f "$d/key" >/dev/null
+          ssh-keygen -l -f "$d/known_hosts" >/dev/null
+          ssh -F /dev/null -T -i "$d/key" -o BatchMode=yes -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$d/known_hosts" -o ConnectTimeout=15 -o ConnectionAttempts=1 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -p 22 workagent@57.129.182.200 'sudo -n python3 -' <<'NB_RESOURCES'
+          import os, subprocess, socket
+          def run(c):
+              return subprocess.run(c, shell=True, text=True, capture_output=True, timeout=15).stdout.strip()
+          mem={}
+          for line in run('free -m').splitlines():
+              p=line.split()
+              if p and p[0].startswith('Mem:'): mem={'total_mb':p[1],'used_mb':p[2],'available_mb':p[6]}
+          disk={}
+          for line in run('df -hP /').splitlines()[1:]:
+              p=line.split()
+              if len(p)>=6: disk={'size':p[1],'used':p[2],'available':p[3],'use':p[4]}
+          load=run('cat /proc/loadavg').split()[:3]
+          print('MEMORY_TOTAL_MB='+mem.get('total_mb','UNKNOWN')+' AVAILABLE_MB='+mem.get('available_mb','UNKNOWN'))
+          print('DISK_SIZE='+disk.get('size','UNKNOWN')+' USED='+disk.get('used','UNKNOWN')+' AVAILABLE='+disk.get('available','UNKNOWN')+' USE='+disk.get('use','UNKNOWN'))
+          print('LOAD_1M='+ (load[0] if len(load)>0 else 'UNKNOWN')+' LOAD_5M='+ (load[1] if len(load)>1 else 'UNKNOWN')+' LOAD_15M='+ (load[2] if len(load)>2 else 'UNKNOWN'))
+          print('DNS_NORDBRIDGE='+run('getent hosts nordbridge-global.com').replace('\\n',';') or 'NOT_RESOLVED')
+          print('DNS_CRM='+run('getent hosts crm.57.129.182.200.sslip.io').replace('\\n',';') or 'NOT_RESOLVED')
+          print('RESOURCE_RECHECK=COMPLETED')
+          NB_RESOURCES
