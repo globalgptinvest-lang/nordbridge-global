@@ -52,11 +52,11 @@ jobs:
           import ast,base64,datetime,json,subprocess,shutil,hashlib,urllib.request
           from pathlib import Path
           root=Path('/opt/nordbridge-director');backup=Path('/var/backups/nordbridge-director')/('intake-monitor-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'));backup.mkdir(mode=0o700)
-          replacements=[('monitor.py', '454d0c795b249b8ec1778b63ea83acf9f6f109e6a3792746860d303661eeee4b', 'https://raw.githubusercontent.com/globalgptinvest-lang/nordbridge-global/42a004226938427c9a8763762870b442c4fa4dee/ops/director/monitor.py', 'b585425f36b7207d4175bc14fbf97488161d9a18586b106a36899a02bc3e9f63'), ('maintenance.py', '65cd36590b958bf4f69c89b5b31252fd85b9646ed365304310c3f6846dc970cd', 'https://raw.githubusercontent.com/globalgptinvest-lang/nordbridge-global/76fe6bbcac1f23b8b5fc84de9bd150a0c014ef7e/ops/nordbridge-maintenance.py', '6f9f2f16caeb4fbf7177729e6a39ed0ed5dcff69a0163c697e879bc962d99c72')]
+          replacements=[('monitor.py', 'e9c7c0af986ad99c81356e49c1647746c1a11b34f3b0fe0ca67f46c5843a8ae0', 'https://raw.githubusercontent.com/globalgptinvest-lang/nordbridge-global/42a004226938427c9a8763762870b442c4fa4dee/ops/director/monitor.py', 'b585425f36b7207d4175bc14fbf97488161d9a18586b106a36899a02bc3e9f63'), ('maintenance.py', '00811075e6206d62920e247542f7e846c6251149ba7d67df0e3e04c3b3903334', 'https://raw.githubusercontent.com/globalgptinvest-lang/nordbridge-global/76fe6bbcac1f23b8b5fc84de9bd150a0c014ef7e/ops/nordbridge-maintenance.py', '6f9f2f16caeb4fbf7177729e6a39ed0ed5dcff69a0163c697e879bc962d99c72')]
           prepared=[]
-          for name,expected_ast,url,digest in replacements:
+          for name,expected_source_sha,url,digest in replacements:
            p=root/name
-           actual_ast=hashlib.sha256(ast.dump(ast.parse(p.read_text())).encode()).hexdigest();print('SOURCE_AST_'+name+'='+actual_ast);assert actual_ast==expected_ast,'source_changed_review_required_'+name
+           actual_source_sha=hashlib.sha256(p.read_bytes()).hexdigest();print('SOURCE_SHA_'+name+'='+actual_source_sha);assert actual_source_sha==expected_source_sha,'source_changed_review_required_'+name
            opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
            with opener.open(url,timeout=25) as response:new=response.read(200000)
            assert hashlib.sha256(new).hexdigest()==digest,'reviewed_source_checksum_mismatch'
@@ -82,3 +82,5 @@ jobs:
 # retry after current parity capture
 
 # diagnostic AST hash only
+
+# byte checksum guard avoids Python-version-dependent AST formatting
