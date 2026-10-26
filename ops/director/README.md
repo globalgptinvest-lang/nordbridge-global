@@ -58,3 +58,5 @@ Actual CRM evidence: 61 potential award suppliers, 12 programme opportunities in
 The daily owner report includes these factual counts. A manual report test updates only its test marker and does not suppress the scheduled daily report. Regression tests: `python3 -m unittest discover -s ops/director -p 'test_*.py' -v`; the existing procurement quality workflow runs them alongside its earlier tests.
 
 Evidence: [nightly recovery](https://github.com/globalgptinvest-lang/nordbridge-global/actions/runs/40273018471), [need-to-draft](https://github.com/globalgptinvest-lang/nordbridge-global/actions/runs/40275019496), [restored new CRM records](https://github.com/globalgptinvest-lang/nordbridge-global/actions/runs/40275338879).
+
+Grant date evidence: source dates in year 2099 or later remain preserved as `source_deadline_date`, but `deadline_date` is null and `deadline_requires_review` is true. They are programme candidates requiring full-notice review, not verified operational deadlines. The v2 cache prevents an older normalized response from bypassing this rule.
