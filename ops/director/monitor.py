@@ -98,21 +98,22 @@ def main():
     day=datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     daily_test='--send-daily-test' in sys.argv
     if healthy and ((daily_test and old.get('daily_report_test_date')!=day) or (datetime.datetime.now(datetime.timezone.utc).hour==8 and old.get('daily_report_date')!=day)):
-        code="import director as d,json; c=d.db(); print(json.dumps({'jobs':c.execute(\"SELECT status,count(*) n FROM director.jobs WHERE created_at>now()-interval '24 hours' GROUP BY status\").fetchall(),'tender_candidates':c.execute('SELECT count(*) n FROM director.tenders').fetchone()['n'],'product_drafts':c.execute(\"SELECT count(*) n FROM director.proposals WHERE stage='DRAFT_OWNER_REVIEW'\").fetchone()['n']},default=str)); c.close()"
+        code="import director as d,json; c=d.db(); print(json.dumps({'jobs':c.execute(\"SELECT status,count(*) n FROM director.jobs WHERE created_at>now()-interval '24 hours' GROUP BY status\").fetchall(),'tender_candidates':c.execute('SELECT count(*) n FROM director.tenders').fetchone()['n'],'product_drafts':c.execute(\"SELECT count(*) n FROM director.proposals WHERE stage='DRAFT_OWNER_REVIEW' AND data->>'kind'='product_research'\").fetchone()['n'],'lead_candidates':c.execute(\"SELECT count(*) n FROM director.leads WHERE stream='NORDBRIDGE'\").fetchone()['n'],'contractor_candidates':c.execute(\"SELECT count(*) n FROM director.contractors WHERE stream='NORDBRIDGE'\").fetchone()['n'],'funding_programmes':c.execute(\"SELECT count(*) n FROM director.opportunities WHERE stream='FINANCING' AND data->'source_evidence'->>'record_kind'='FUNDING_PROGRAMME_NOT_BORROWER'\").fetchone()['n']},default=str)); c.close()"
         report=cmd(['docker','exec','nordbridge-director-director-1','python3','-c',code])
         if report.returncode==0:
             data=json.loads(report.stdout)
             text=('NORDBRIDGE — '+('ТЕСТ ЩОДЕННОГО ЗВІТУ' if daily_test else 'ЩОДЕННИЙ ЗВІТ')+' '+day+' UTC\n'
                   +'Завдання: '+json.dumps(data['jobs'],ensure_ascii=False)+'\n'
                   +'Неперевірені тендерні можливості в CRM: '+str(data['tender_candidates'])+'; це не підтверджені платні клієнти.\n'
+                  +'Потреби на кваліфікацію: '+str(data['lead_candidates'])+'; постачальники для перевірки: '+str(data['contractor_candidates'])+'; програми фінансування: '+str(data['funding_programmes'])+'\n'
                   +'Продуктові чернетки на погодження: '+str(data['product_drafts'])+'\n'
                   +'Директор не має інструментів зовнішнього відправлення. Надходження коштів: NOT VERIFIED.\n'
-                  +'Пошук підтверджених клієнтів, виконавців і фінансування потребує підключення джерел.\n'
+                  +'Джерела UK/Grants.gov підключені. Потрібна перевірка відповідності. Грантові програми не є компаніями, які шукають фінансування; приватний потік Zhikal окремий.\n'
                   +'https://office.57.129.182.200.sslip.io\nhttps://nordbridge-global.com')
             out['daily_report_sent']=notify(text)
             if out['daily_report_sent']:
-                out['daily_report_date']=day
                 if daily_test:out['daily_report_test_date']=day
+                else:out['daily_report_date']=day
     tmp=STATE.with_suffix('.tmp');tmp.write_text(json.dumps(out));tmp.chmod(0o600);tmp.replace(STATE)
     cmd(['logger','-t','nordbridge-director',json.dumps({k:v for k,v in out.items() if k!='restarts'})])
     print(json.dumps(out))
