@@ -76,3 +76,5 @@ jobs:
           containers=command(['docker','ps','--format','{{.Names}}|{{.State}}'])
           print('INTAKE_FINAL_STATE='+json.dumps({'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'backup_directory':report['backup_directory'],'restore_checks':checks,'all_postgres_restores_pass':True,'monitor':final,'containers':containers,'rollback':str(backup)}))
           NB_REMOTE_PAYLOAD
+
+# reviewed rerun after private source parity check
