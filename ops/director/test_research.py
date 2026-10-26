@@ -76,4 +76,17 @@ class ResearchParserTests(unittest.TestCase):
         self.assertEqual(row['status'],'cancelled')
         self.assertIsNone(r.need_signal(row,NOW)[0])
 
+class GrantDeadlineEvidenceTests(unittest.TestCase):
+    def test_far_future_source_date_is_preserved_but_not_operational_deadline(self):
+        item,reason=r.grant_hit({'id':'123','title':'Programme','oppStatus':'posted','closeDate':'01/01/2099'},NOW)
+        self.assertIsNone(reason)
+        self.assertEqual(item['source_deadline_date'],'2099-01-01')
+        self.assertIsNone(item['deadline_date'])
+        self.assertTrue(item['deadline_requires_review'])
+    def test_ordinary_future_source_date_keeps_candidate_deadline(self):
+        item,_=r.grant_hit({'id':'123','title':'Programme','oppStatus':'posted','closeDate':'11/30/2026'},NOW)
+        self.assertEqual(item['deadline_date'],'2026-11-30')
+        self.assertFalse(item['deadline_requires_review'])
+
 if __name__=='__main__':unittest.main()
+
