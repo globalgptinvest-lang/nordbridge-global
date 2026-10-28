@@ -183,8 +183,9 @@ async function handler(req,res) {
         await airtable('',token,{method:'POST',body:JSON.stringify({records:[{fields}]})});
       }
     }
+    const receiptSource = serverMode ? 'crm' : 'airtable';
     res.setHeader('Location',
-      'https://nordbridge-global.com/thanks.html?submission='+encodeURIComponent(fields['Lead ID'].slice(4)));
+      'https://www.nordbridge-global.com/thanks.html?submission='+encodeURIComponent(fields['Lead ID'].slice(4))+'&receipt='+receiptSource);
     return res.status(303).end();
   } catch (err) {
     // Avoid leaking provider responses or customer data into public logs.
