@@ -89,6 +89,27 @@ def audit_metadata(path, data, canonical_host=CANONICAL):
     return findings
 
 
+def untranslated_text_finding(path, language, before, after):
+    """Warn when substantial visible English copy remains unchanged after a switch."""
+    if language == "en":
+        return None
+    unchanged = []
+    for original, localized in zip(before, after):
+        text = " ".join(str(original or "").split())
+        if text != " ".join(str(localized or "").split()):
+            continue
+        if len(text) < 42 or len(re.findall(r"[A-Za-z]{3,}", text)) < 4:
+            continue
+        if "@" in text or "http" in text.lower() or "www." in text.lower():
+            continue
+        unchanged.append(text)
+    if not unchanged:
+        return None
+    examples = "; ".join(plain(x) for x in unchanged[:3])
+    return issue("TRANSLATION_COPY_UNCHANGED", "warning", path,
+                 language + ": " + str(len(unchanged)) + " substantial visible text node(s) stayed unchanged; " + examples)
+
+
 def meta_js():
     return r"""() => {
       const get = sel => document.querySelector(sel)?.content || '';
@@ -213,10 +234,19 @@ async def inspect(args):
                                     findings.append(issue("NO_LANGUAGE_SWITCH", "warning", path,
                                                           "Page lacks four-language switcher"))
                                 else:
-                                    # Test on every public page, not only financing.
-                                    # Assert UI/head state, not subjective translation quality.
+                                    # Test every public page: language/head state plus a heuristic
+                                    # warning for substantial visible source copy left unchanged.
                                     base_title = (await page.title()).strip()
                                     base_heading = (await page.locator("h1").first.inner_text()).strip() if data.get("h1_count") else ""
+                                    base_copy = await page.evaluate(r"""() => {
+                                      const out=[];
+                                      const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+                                      for(let n; (n=walker.nextNode());) {
+                                        const value=(n.nodeValue||'').trim();
+                                        if(value.length>=42 && n.parentElement?.getClientRects().length) out.push(value);
+                                      }
+                                      return out;
+                                    }""")
                                     translated = []
                                     for language in LANGUAGES:
                                         try:
@@ -227,7 +257,16 @@ async def inspect(args):
                                               lang:document.documentElement.lang,
                                               dir:document.documentElement.dir,
                                               title:document.title.trim(),
-                                              h1:(document.querySelector('h1')?.innerText||'').trim()
+                                              h1:(document.querySelector('h1')?.innerText||'').trim(),
+                                              copy:(() => {
+                                                const out=[];
+                                                const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+                                                for(let n; (n=walker.nextNode());) {
+                                                  const value=(n.nodeValue||'').trim();
+                                                  if(value.length>=42 && n.parentElement?.getClientRects().length) out.push(value);
+                                                }
+                                                return out;
+                                              })()
                                             })""")
                                             translated.append(state)
                                             if state["lang"] != language or state["dir"] != ("rtl" if language=="ar" else "ltr"):
@@ -236,6 +275,9 @@ async def inspect(args):
                                             if not state["title"] or (data.get("h1_count") and not state["h1"]):
                                                 findings.append(issue("TRANSLATION_EMPTY", "error", path,
                                                                       "Missing visible heading or title in "+language))
+                                            copy_issue = untranslated_text_finding(path, language, base_copy, state["copy"])
+                                            if copy_issue:
+                                                findings.append(copy_issue)
                                         except Exception as translation_error:
                                             findings.append(issue("LANGUAGE_CLICK_FAIL", "error", path,
                                                                   language+": "+type(translation_error).__name__))
