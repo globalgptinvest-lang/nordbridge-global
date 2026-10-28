@@ -41,6 +41,15 @@ const checks = {
   "Compare Tender Packages": ['uk', 'da', 'ar'],
   "Next step": ['uk', 'da', 'ar'],
   "NordBridge is an independent business introducer and tender-support provider. References to UN organizations describe procurement contexts only and do not imply affiliation, endorsement or representation. NordBridge does not guarantee tender awards.": ['uk', 'da', 'ar'],
+  "Identify mandatory criteria, deadlines, forms, certifications, references and submission instructions.": ['uk', 'da', 'ar'],
+  "Build a practical checklist and identify missing or inconsistent information before submission.": ['uk', 'da', 'ar'],
+  "Review organization and completeness of the bidder's technical and commercial package.": ['uk', 'da', 'ar'],
+  "Track clarification points, procurement milestones and final submission readiness.": ['uk', 'da', 'ar'],
+  "International tender document support": ['uk', 'da', 'ar'],
+  "UN Tender Support & Bid Preparation | NordBridge Denmark": ['uk', 'da', 'ar'],
+  "Independent tender support for companies pursuing UN, UNICEF, UNOPS and other international procurement opportunities: requirements, eligibility, compliance and bid-document review.": ['uk', 'da', 'ar'],
+  "UN Tender Support & Bid Preparation | NordBridge": ['uk', 'da', 'ar'],
+  "Independent support for international procurement bids, including requirements, eligibility, compliance and document-readiness review.": ['uk', 'da', 'ar'],
 };
 
 
