@@ -217,7 +217,8 @@ test('Real production configuration keeps hostname checks and rejects dummy fixt
  assert.equal(lead.__test.stagingTestMode(),false);
  assert.equal(await lead.__test.validateTurnstile('synthetic-secret','XXXX.DUMMY.TOKEN.XXXX',''),false);
 });
-test('Readiness and write route agree on exact VPS host',()=>{
+test('Readiness and write route agree on exact VPS host',async()=>{
  configured();process.env.NORDBRIDGE_CRM_API_URL='https://crm.57.129.182.200.sslip.io';process.env.NORDBRIDGE_CRM_API_TOKEN='x'.repeat(64);
- const r=response();status({method:'GET'},r);assert.equal(r.body.ready,true);
+ global.fetch=async()=>({ok:true,json:async()=>({ready:true})});
+ const r=response();await status({method:'GET'},r);assert.equal(r.body.ready,true);
 });
