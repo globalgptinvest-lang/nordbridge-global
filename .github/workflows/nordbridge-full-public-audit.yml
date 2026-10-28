@@ -5,7 +5,9 @@ on:
     paths:
       - "scripts/full_public_audit.py"
       - "scripts/tests/test_full_public_audit.py"
+      - "scripts/tests/i18n-coverage.test.cjs"
       - ".github/workflows/nordbridge-full-public-audit.yml"
+      - "i18n.js"
       - "*.html"
       - "sitemap.xml"
       - "robots.txt"
@@ -14,7 +16,9 @@ on:
     paths:
       - "scripts/full_public_audit.py"
       - "scripts/tests/test_full_public_audit.py"
+      - "scripts/tests/i18n-coverage.test.cjs"
       - ".github/workflows/nordbridge-full-public-audit.yml"
+      - "i18n.js"
       - "*.html"
       - "sitemap.xml"
       - "robots.txt"
@@ -41,6 +45,7 @@ jobs:
       - name: Validate deployed language and intake JavaScript syntax
         run: |
           node --check i18n.js
+          node scripts/tests/i18n-coverage.test.cjs
           node --check forms-intake.js
           node --check forms.js
       - name: Validate static audit logic against synthetic examples

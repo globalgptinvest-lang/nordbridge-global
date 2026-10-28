@@ -1,6 +1,6 @@
 """Synthetic source-level regression checks for the full public QA audit."""
 import unittest
-from scripts.full_public_audit import sitemap_urls, audit_metadata
+from scripts.full_public_audit import sitemap_urls, audit_metadata, untranslated_text_finding
 
 
 class SitewideAuditTests(unittest.TestCase):
@@ -46,6 +46,28 @@ class SitewideAuditTests(unittest.TestCase):
             "viewport": True, "lang": "en", "h1_count": 1, "overflow_px": 0,
             "missing_anchors": ["#unknown-section"]})
         self.assertEqual([x["code"] for x in result], ["BROKEN_ANCHOR"])
+
+    def test_unchanged_long_copy_is_reported_as_translation_warning(self):
+        result = untranslated_text_finding(
+            "/services.html", "uk",
+            ["Choose the business problem you need to solve with international services."],
+            ["Choose the business problem you need to solve with international services."])
+        self.assertEqual(result["code"], "TRANSLATION_COPY_UNCHANGED")
+        self.assertEqual(result["severity"], "warning")
+
+    def test_translated_copy_is_not_reported(self):
+        result = untranslated_text_finding(
+            "/services.html", "uk",
+            ["Choose the business problem you need to solve with international services."],
+            ["Оберіть бізнес-питання для вирішення за допомогою міжнародних послуг."])
+        self.assertIsNone(result)
+
+    def test_english_copy_is_not_checked_as_untranslated(self):
+        result = untranslated_text_finding(
+            "/services.html", "en",
+            ["Choose the business problem you need to solve with international services."],
+            ["Choose the business problem you need to solve with international services."])
+        self.assertIsNone(result)
 
 
     def test_all_sitemap_pages_have_www_canonical_and_language_script(self):
