@@ -22,6 +22,7 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
     token=sessionStorage.getItem('nb_pending_enquiry_token')||'';
   }catch(e){}
   var returnedToken=new URLSearchParams(location.search).get('submission')||'';
+  var receipt=new URLSearchParams(location.search).get('receipt')||'';
   var fresh=pending&&token!==''&&returnedToken===token&&ts>0&&(Date.now()-ts)>=0&&(Date.now()-ts)<30*60*1000;
   var heading=document.getElementById('nb-confirmation-heading');
   var message=document.getElementById('nb-confirmation-message');
@@ -30,8 +31,14 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
     if(message)message.textContent='We cannot verify that your enquiry was received. If you submitted a form, please check your confirmation or contact info@nordbridge-global.com before sending again.';
     return;
   }
-  if(heading)heading.textContent='Form submission returned.';
-  if(message)message.textContent='The form provider redirected you back to NordBridge. Delivery to our mailbox has not been independently verified. If you do not receive confirmation, contact info@nordbridge-global.com.';
+  if(receipt!=='crm'&&receipt!=='airtable'){
+    if(heading)heading.textContent='Enquiry not confirmed';
+    if(message)message.textContent='The form provider returned you to NordBridge, but our intake system did not confirm that your enquiry was recorded. Please email info@nordbridge-global.com before submitting again.';
+    return;
+  }
+
+  if(heading)heading.textContent='Enquiry received';
+  if(message)message.textContent='Your enquiry has been recorded in NordBridge’s intake system for review. We will respond using the business email you provided.';
 
   try{
     sessionStorage.removeItem('nb_pending_enquiry');
@@ -40,13 +47,12 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);
     sessionStorage.removeItem('nb_pending_enquiry_token');
   }catch(e){}
 
-  var extra={event_category:'diagnostic',event_label:'form_provider_return_unverified'};
+  var extra={event_category:'lead',event_label:'confirmed_intake_record'};
   if(deal)extra.deal_id=deal;
-
   if(window.NordBridgeTracking&&typeof window.NordBridgeTracking.track==='function'){
-    window.NordBridgeTracking.track('nb_form_provider_return',extra);
+    window.NordBridgeTracking.track('nb_confirmed_enquiry',extra);
   }else if(typeof window.gtag==='function'){
-    gtag('event','nb_form_provider_return',extra);
+    gtag('event','nb_confirmed_enquiry',extra);
   }
 })();
 </script></body></html>
