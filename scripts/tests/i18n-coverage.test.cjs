@@ -21,7 +21,20 @@ const checks = {
   'NordBridge Denmark · CVR 46768736 · Hjørring, North Denmark · nordbridge-global.com · Independent tender support, procurement, supplier and contractor sourcing.': ['uk', 'da', 'ar'],
   'Denmark · CVR 46768736': ['uk', 'da', 'ar'],
   'International city representing global business connections': ['uk', 'da', 'ar'],
+  "Support is tailored to the specific procurement and may include review of RFQ, RFP, ITB, EOI and prequalification documentation. The bidder remains responsible for its representations, pricing, technical solution and final submission.": ['uk', 'da', 'ar'],
+  "Companies may approach NordBridge when evaluating opportunities published by organizations such as UNICEF, UNOPS, IOM and other international buyers. NordBridge is an independent service provider and is not affiliated with, endorsed by, or acting on behalf of these organizations.": ['uk', 'da', 'ar'],
+  "Where permitted, support can be provided under a separately agreed fixed professional fee. Any success fee or introduction arrangement is documented separately in writing where applicable.": ['uk', 'da', 'ar'],
+  "Check qualification criteria, experience, financial requirements, licenses and certifications before investing in a full bid.": ['uk', 'da', 'ar'],
+  "Check mandatory requirements, missing documents and final submission readiness when the bid package is already being prepared.": ['uk', 'da', 'ar'],
+  "Choose €250 Go / No-Go Review, €750 Compliance & Submission Review, or Full Tender Support from €1,250. Fixed-scope professional services require 100% advance payment before substantive work begins.": ['uk', 'da', 'ar'],
+  "Payment: 100% advance payment in cleared funds before substantive fixed-scope work begins. Any success-fee or protected-introduction arrangement is separate and documented in writing where applicable.": ['uk', 'da', 'ar'],
+  "Send the tender reference or link, deadline and the support you need. NordBridge can assess the scope before commercial terms are agreed.": ['uk', 'da', 'ar'],
+  "Review scope and pricing before you proceed": ['uk', 'da', 'ar'],
+  "Compare published support levels or send your requirement for a free initial fit review. Complex assignments are scoped and quoted in writing.": ['uk', 'da', 'ar'],
+  "UN tender support and international institutional bid preparation": ['uk', 'da', 'ar'],
+  "NordBridge Denmark provides independent tender-document, eligibility, compliance and bid-preparation support for companies pursuing UN and other institutional procurement opportunities. NordBridge is not affiliated with or endorsed by any UN organization and does not guarantee qualification or award.": ['uk', 'da', 'ar'],
 };
+
 
 const failures = [];
 for (const [english, languages] of Object.entries(checks)) {
