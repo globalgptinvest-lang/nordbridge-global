@@ -1,6 +1,6 @@
 # Public, read-only deployment probe. No tokens, PII, CRM writes or form submissions.
 # A healthy /health endpoint alone does not prove authenticated intake works.
-name: NordBridge VPS CRM gateway staging check
+name: NordBridge VPS CRM gateway check
 on:
   workflow_dispatch:
   push:
@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Check DNS, public TLS, and form readiness without changing production
+      - name: Check configured gateway, branded aliases, and public form readiness
         shell: bash
         run: |
           set -uo pipefail
-          echo "## NordBridge — VPS CRM cutover readiness (read-only)" >> "$GITHUB_STEP_SUMMARY"
+          echo "## NordBridge — CRM gateway health (read-only)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "No tokens or private customer data are accessed. No form is submitted." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Gateway | HTTPS /health | Public health response |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gateway | HTTPS /health | Result |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
           gateway_ready=0
-          for domain in crm.nordbridge-global.com office.nordbridge-global.com; do
+          for domain in crm.57.129.182.200.sslip.io crm.nordbridge-global.com office.nordbridge-global.com; do
             tmp="$(mktemp)"
             status="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
               --output "$tmp" --write-out "%{http_code}" \
@@ -75,10 +75,10 @@ jobs:
           rm -f "$tmp"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [[ "$gateway_ready" -eq 1 ]]; then
-            echo "Next gate: verify authentication, idempotent private POST and Vercel production secrets **before** cutover." >> "$GITHUB_STEP_SUMMARY"
-            echo "CUTOVER_GATE=PUBLIC_GATEWAY_HEALTHY_AUTH_STILL_UNVERIFIED"
+            echo "Gateway is publicly healthy. Authentication, idempotent lead writes and notifications still require private verification." >> "$GITHUB_STEP_SUMMARY"
+            echo "GATEWAY_STATE=PUBLIC_HEALTHY_AUTH_UNVERIFIED"
           else
-            echo "Cutover PENDING: neither approved VPS gateway is publicly healthy. Keep current Airtable/FormSubmit fallback." >> "$GITHUB_STEP_SUMMARY"
-            echo "CUTOVER_GATE=PUBLIC_GATEWAY_NOT_READY_KEEP_FALLBACK"
+            echo "Gateway is not publicly verified. Website fallback remains available when readiness is false." >> "$GITHUB_STEP_SUMMARY"
+            echo "GATEWAY_STATE=PUBLIC_GATEWAY_NOT_READY"
           fi
-          echo "Staging probe complete: no server or website settings changed."
+          echo "Read-only probe complete: no server or website settings changed."

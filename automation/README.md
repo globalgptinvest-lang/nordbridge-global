@@ -47,13 +47,17 @@ READY_FOR_HUMAN_REVIEW means only that records passed basic automated checks. It
 
 Before lawful personalized outreach, review corporate sources, real needs, business email validity, opt-outs, duplicates in Gmail SENT/INBOX/SPAM, and CRM by domain/email/tender/deal ID. Do not resend to hard-bounced addresses or bypass sender limits. Confirm SENT only with provider message ID; DELIVERED only with delivery evidence.
 
-## Canonical Airtable CRM and protected intake (verified 2026-10-17)
+## Production website intake and protected CRM (reviewed 2026-10-28)
 
-Airtable **Global Deal Engine — Registry** is the canonical NordBridge CRM, not monday.com. The live www domain now points at Vercel (after migration from GitHub Pages). The six business forms retain their FormSubmit fallback but enhance to Vercel `/api/lead` once Turnstile and private Airtable credentials are configured. Vercel `/api/intake-status` only exposes boolean readiness and the public Turnstile site key. Do not store CRM tokens in public GitHub Actions.
+The public NordBridge website is served through the Vercel project connected to this repository. Website forms enhance to Vercel `/api/lead` when `/api/intake-status` reports readiness. Readiness checks the selected provider and, in CRM server mode, its public `/health` endpoint before enabling the server route.
 
-One **actual synthetic website form submission** was confirmed in the private Airtable Website Leads table on 2026-10-17, with one lead record and no duplicate at inspection time. This does not guarantee every future live submission or concurrent-replay behavior; Airtable does not provide an atomic unique constraint. Monitor duplicate IDs privately, respect data privacy, and investigate intake 5xx alerts.
+The current Vercel production configuration selects the NordBridge CRM API on the VPS, backed by PostgreSQL. CRM URL and token are private environment variables and must never be copied into GitHub Actions, reports, or this repository. If the CRM health check fails, the public status becomes not ready and the existing FormSubmit fallback remains available. If a lead write fails while CRM server mode is selected, the API returns an error instead of silently writing a duplicate to Airtable.
 
-Invoice/payment state is private. The public website contains legacy `buy.stripe.com` checkout links; ownership is **NOT VERIFIED** against the connected Stripe Live account (its payment link list was empty on 2026-10-17). Do not create replacement links, change beneficiary data, claim invoice paid or offer automatic charging until account ownership and an actual payment are verified.
+The configured direct CRM endpoint `crm.57.129.182.200.sslip.io` returned healthy during the 2026-10-28 review. The branded aliases `crm.nordbridge-global.com` and `office.nordbridge-global.com` were unreachable in external checks and remain unverified; do not rely on them until DNS and TLS are corrected and verified. A public `/health` result verifies only basic service/database availability, not authenticated lead creation or notification delivery.
+
+A historical synthetic website form submission was confirmed in the private Airtable Website Leads table on 2026-10-17. That historical check does not establish current delivery behavior or make Airtable the canonical CRM. Do not submit real customer details as a test; use an approved synthetic lead and verify the private CRM record and delivery logs.
+
+Invoice/payment state is private. Public checkout links and payment status require independent verification against the connected Stripe account. Never claim an invoice was paid or change beneficiary/payment details without verified evidence.
 
 ## ONE RUN — single command public-safe operation
 
