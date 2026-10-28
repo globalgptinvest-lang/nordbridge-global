@@ -33,6 +33,14 @@ const checks = {
   "Compare published support levels or send your requirement for a free initial fit review. Complex assignments are scoped and quoted in writing.": ['uk', 'da', 'ar'],
   "UN tender support and international institutional bid preparation": ['uk', 'da', 'ar'],
   "NordBridge Denmark provides independent tender-document, eligibility, compliance and bid-preparation support for companies pursuing UN and other institutional procurement opportunities. NordBridge is not affiliated with or endorsed by any UN organization and does not guarantee qualification or award.": ['uk', 'da', 'ar'],
+  "Fixed-fee option": ['uk', 'da', 'ar'],
+  "Tender Support Packages": ['uk', 'da', 'ar'],
+  "Payment:": ['uk', 'da', 'ar'],
+  "100% advance payment in cleared funds before substantive fixed-scope work begins. Any success-fee or protected-introduction arrangement is separate and documented in writing where applicable.": ['uk', 'da', 'ar'],
+  "View Packages": ['uk', 'da', 'ar'],
+  "Compare Tender Packages": ['uk', 'da', 'ar'],
+  "Next step": ['uk', 'da', 'ar'],
+  "NordBridge is an independent business introducer and tender-support provider. References to UN organizations describe procurement contexts only and do not imply affiliation, endorsement or representation. NordBridge does not guarantee tender awards.": ['uk', 'da', 'ar'],
 };
 
 
