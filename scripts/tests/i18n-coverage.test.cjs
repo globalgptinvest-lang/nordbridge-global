@@ -21,8 +21,6 @@ const checks = {
   'NordBridge Denmark · CVR 46768736 · Hjørring, North Denmark · nordbridge-global.com · Independent tender support, procurement, supplier and contractor sourcing.': ['uk', 'da', 'ar'],
   'Denmark · CVR 46768736': ['uk', 'da', 'ar'],
   'International city representing global business connections': ['uk', 'da', 'ar'],
-};
-
   "Support is tailored to the specific procurement and may include review of RFQ, RFP, ITB, EOI and prequalification documentation. The bidder remains responsible for its representations, pricing, technical solution and final submission.": ['uk', 'da', 'ar'],
   "Companies may approach NordBridge when evaluating opportunities published by organizations such as UNICEF, UNOPS, IOM and other international buyers. NordBridge is an independent service provider and is not affiliated with, endorsed by, or acting on behalf of these organizations.": ['uk', 'da', 'ar'],
   "Where permitted, support can be provided under a separately agreed fixed professional fee. Any success fee or introduction arrangement is documented separately in writing where applicable.": ['uk', 'da', 'ar'],
@@ -35,6 +33,8 @@ const checks = {
   "Compare published support levels or send your requirement for a free initial fit review. Complex assignments are scoped and quoted in writing.": ['uk', 'da', 'ar'],
   "UN tender support and international institutional bid preparation": ['uk', 'da', 'ar'],
   "NordBridge Denmark provides independent tender-document, eligibility, compliance and bid-preparation support for companies pursuing UN and other institutional procurement opportunities. NordBridge is not affiliated with or endorsed by any UN organization and does not guarantee qualification or award.": ['uk', 'da', 'ar'],
+};
+
 
 const failures = [];
 for (const [english, languages] of Object.entries(checks)) {
